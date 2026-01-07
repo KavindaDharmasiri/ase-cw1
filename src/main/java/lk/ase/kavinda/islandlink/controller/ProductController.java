@@ -1,10 +1,12 @@
 package lk.ase.kavinda.islandlink.controller;
 
 import lk.ase.kavinda.islandlink.entity.Product;
+import lk.ase.kavinda.islandlink.service.BulkUploadService;
 import lk.ase.kavinda.islandlink.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
@@ -14,6 +16,9 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private BulkUploadService bulkUploadService;
 
     @GetMapping
     public List<Product> getAllProducts() {
@@ -69,5 +74,23 @@ public class ProductController {
     @GetMapping("/categories")
     public List<String> getAllCategories() {
         return productService.getAllCategories();
+    }
+
+    @PostMapping("/bulk-upload")
+    public ResponseEntity<?> bulkUploadProducts(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("Please select a file to upload");
+        }
+        
+        if (!file.getOriginalFilename().endsWith(".csv")) {
+            return ResponseEntity.badRequest().body("Only CSV files are supported");
+        }
+        
+        try {
+            BulkUploadService.BulkUploadResult result = bulkUploadService.uploadProducts(file);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Upload failed: " + e.getMessage());
+        }
     }
 }

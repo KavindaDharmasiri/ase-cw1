@@ -4,11 +4,17 @@ import lk.ase.kavinda.islandlink.service.OrderService;
 import lk.ase.kavinda.islandlink.service.ProductService;
 import lk.ase.kavinda.islandlink.service.InventoryService;
 import lk.ase.kavinda.islandlink.service.DeliveryService;
+import lk.ase.kavinda.islandlink.service.ReportExportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,6 +34,9 @@ public class ReportController {
 
     @Autowired
     private DeliveryService deliveryService;
+
+    @Autowired
+    private ReportExportService reportExportService;
 
     @GetMapping("/dashboard")
     public Map<String, Object> getDashboardReport() {
@@ -86,5 +95,37 @@ public class ReportController {
         report.put("deliveryRate", deliveries.isEmpty() ? 0 : (delivered * 100.0) / deliveries.size());
         
         return report;
+    }
+
+    @GetMapping("/sales/export")
+    public ResponseEntity<byte[]> exportSalesReport() {
+        List<Object[]> salesData = Arrays.asList(
+            new Object[]{"ORD001", "ABC Store", "Product A", "10", "$100", "2024-01-06"},
+            new Object[]{"ORD002", "XYZ Shop", "Product B", "5", "$50", "2024-01-06"}
+        );
+        
+        byte[] csvData = reportExportService.generateSalesReport(salesData);
+        String filename = reportExportService.generateReportFilename("sales");
+        
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+            .contentType(MediaType.parseMediaType("text/csv"))
+            .body(csvData);
+    }
+
+    @GetMapping("/inventory/export")
+    public ResponseEntity<byte[]> exportInventoryReport() {
+        List<Object[]> inventoryData = Arrays.asList(
+            new Object[]{"Product A", "Category 1", "50", "10", "Colombo RDC", "2024-01-06"},
+            new Object[]{"Product B", "Category 2", "25", "5", "Kandy RDC", "2024-01-06"}
+        );
+        
+        byte[] csvData = reportExportService.generateInventoryReport(inventoryData);
+        String filename = reportExportService.generateReportFilename("inventory");
+        
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+            .contentType(MediaType.parseMediaType("text/csv"))
+            .body(csvData);
     }
 }

@@ -14,6 +14,10 @@ public class Delivery {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @ManyToOne
+    @JoinColumn(name = "delivery_route_id")
+    private DeliveryRoute deliveryRoute;
+
     @Column(nullable = false)
     private String driverName;
 
@@ -58,6 +62,9 @@ public class Delivery {
 
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }
+
+    public DeliveryRoute getDeliveryRoute() { return deliveryRoute; }
+    public void setDeliveryRoute(DeliveryRoute deliveryRoute) { this.deliveryRoute = deliveryRoute; }
 
     public String getDriverName() { return driverName; }
     public void setDriverName(String driverName) { this.driverName = driverName; }

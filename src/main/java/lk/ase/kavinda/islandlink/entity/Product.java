@@ -17,8 +17,9 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false)
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
@@ -43,7 +44,7 @@ public class Product {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Product(String name, String description, String category, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
+    public Product(String name, String description, Category category, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
         this();
         this.name = name;
         this.description = description;
@@ -64,8 +65,8 @@ public class Product {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }

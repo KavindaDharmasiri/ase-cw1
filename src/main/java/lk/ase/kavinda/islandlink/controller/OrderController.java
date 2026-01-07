@@ -80,6 +80,31 @@ public class OrderController {
         }
     }
 
+    @PutMapping("/{id}/modify")
+    @PreAuthorize("hasRole('RETAILER') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<?> modifyOrder(@PathVariable Long id, @RequestBody ModifyOrderRequest request) {
+        try {
+            List<OrderService.CreateOrderItemDTO> items = request.getItems().stream()
+                    .map(item -> new OrderService.CreateOrderItemDTO(item.getProductId(), item.getQuantity()))
+                    .collect(java.util.stream.Collectors.toList());
+            Order order = orderService.modifyOrder(id, items);
+            return ResponseEntity.ok(order);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('RETAILER') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<?> cancelOrder(@PathVariable Long id) {
+        try {
+            orderService.cancelOrder(id);
+            return ResponseEntity.ok("Order cancelled successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // DTO classes
     public static class CreateOrderRequest {
         private Long customerId;
@@ -107,5 +132,12 @@ public class OrderController {
         public void setProductId(Long productId) { this.productId = productId; }
         public Integer getQuantity() { return quantity; }
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    }
+
+    public static class ModifyOrderRequest {
+        private List<OrderItemRequest> items;
+
+        public List<OrderItemRequest> getItems() { return items; }
+        public void setItems(List<OrderItemRequest> items) { this.items = items; }
     }
 }

@@ -99,6 +99,52 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    @Transactional
+    public Order modifyOrder(Long orderId, List<CreateOrderItemDTO> newItems) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new RuntimeException("Cannot modify order that is already being processed");
+        }
+        
+        // Remove existing order items
+        orderItemRepository.deleteByOrderId(orderId);
+        
+        // Add new items
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (CreateOrderItemDTO itemDTO : newItems) {
+            Product product = productRepository.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + itemDTO.getProductId()));
+            
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setUnitPrice(product.getPrice());
+            orderItem.setTotalPrice(product.getPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
+            
+            orderItemRepository.save(orderItem);
+            totalAmount = totalAmount.add(orderItem.getTotalPrice());
+        }
+        
+        order.setTotalAmount(totalAmount);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        if (order.getStatus() == Order.OrderStatus.DELIVERED) {
+            throw new RuntimeException("Cannot cancel delivered order");
+        }
+        
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
     // DTO class for order creation
     public static class CreateOrderItemDTO {
         private Long productId;
