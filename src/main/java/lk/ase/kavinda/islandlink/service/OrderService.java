@@ -53,16 +53,24 @@ public class OrderService {
     }
 
     @Transactional
-    public Order createOrder(Long customerId, String rdcLocation, String deliveryAddress, List<CreateOrderItemDTO> items) {
+    public Order createOrder(Long customerId, String rdcLocation, String deliveryAddress, Integer estimatedDeliveryDays, String customerPhone, String storeName, List<CreateOrderItemDTO> items) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
         Order order = new Order();
+        order.setOrderCode(generateOrderCode());
         order.setCustomer(customer);
         order.setRdcLocation(rdcLocation);
         order.setDeliveryAddress(deliveryAddress);
+        order.setCustomerPhone(customerPhone != null ? customerPhone : customer.getPhone());
+        order.setStoreName(storeName != null ? storeName : customer.getFullName());
         order.setStatus(Order.OrderStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
+        // Use frontend calculated delivery days or default to 5
+        int deliveryDays = estimatedDeliveryDays != null ? estimatedDeliveryDays : 5;
+        order.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(deliveryDays));
+        // Set temporary totalAmount to avoid null constraint
+        order.setTotalAmount(BigDecimal.ZERO);
 
         // Save order first to get ID
         order = orderRepository.save(order);
@@ -143,6 +151,22 @@ public class OrderService {
         
         order.setStatus(Order.OrderStatus.CANCELLED);
         orderRepository.save(order);
+    }
+
+    public List<Order> getRecentOrders(int days) {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
+        return orderRepository.findByOrderDateAfter(cutoffDate);
+    }
+
+    public long countRecentOrders(int days) {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
+        return orderRepository.countByOrderDateAfter(cutoffDate);
+    }
+
+    private String generateOrderCode() {
+        String year = String.valueOf(LocalDateTime.now().getYear());
+        long orderCount = orderRepository.count() + 1;
+        return String.format("ORD-%s-%04d", year, orderCount);
     }
 
     // DTO class for order creation

@@ -117,4 +117,21 @@ public class UserService {
         user.setEmail(email);
         userRepository.save(user);
     }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
+
+    public Role getRoleByName(String roleName) {
+        try {
+            Role.RoleName roleEnum = Role.RoleName.valueOf(roleName);
+            return roleRepository.findByName(roleEnum).orElse(null);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

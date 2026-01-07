@@ -13,6 +13,10 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     
     List<Delivery> findByStatus(Delivery.DeliveryStatus status);
     
+    List<Delivery> findByStatusIn(List<Delivery.DeliveryStatus> statuses);
+    
+    long countByStatusIn(List<Delivery.DeliveryStatus> statuses);
+    
     Optional<Delivery> findByOrderId(Long orderId);
     
     @Query("SELECT d FROM Delivery d WHERE d.order.rdcLocation = :rdcLocation")
@@ -20,4 +24,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     
     @Query("SELECT d FROM Delivery d WHERE d.order.customer.id = :customerId")
     List<Delivery> findByCustomerId(@Param("customerId") Long customerId);
+    
+    List<Delivery> findByDeliveryRouteId(Long deliveryRouteId);
 }

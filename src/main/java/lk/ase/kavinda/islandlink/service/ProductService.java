@@ -1,6 +1,9 @@
 package lk.ase.kavinda.islandlink.service;
 
+import lk.ase.kavinda.islandlink.dto.ProductDTO;
+import lk.ase.kavinda.islandlink.entity.Category;
 import lk.ase.kavinda.islandlink.entity.Product;
+import lk.ase.kavinda.islandlink.repository.CategoryRepository;
 import lk.ase.kavinda.islandlink.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,9 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
@@ -21,21 +27,43 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    public Product createProduct(Product product) {
+    public Product createProductFromDTO(ProductDTO productDTO) {
+        System.out.println("Looking for category: " + productDTO.getCategory());
+        Category category = categoryRepository.findByName(productDTO.getCategory());
+        System.out.println("Found category: " + category);
+        
+        if (category == null) {
+            throw new RuntimeException("Category not found: " + productDTO.getCategory());
+        }
+        
+        Product product = new Product();
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        product.setCategory(category);
+        product.setPrice(productDTO.getPrice());
+        product.setUnit(productDTO.getUnit());
+        product.setImageUrl(productDTO.getImageUrl());
+        product.setMinStockLevel(productDTO.getMinStockLevel());
+        
         return productRepository.save(product);
     }
 
-    public Product updateProduct(Long id, Product productDetails) {
+    public Product updateProductFromDTO(Long id, ProductDTO productDTO) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         
-        product.setName(productDetails.getName());
-        product.setDescription(productDetails.getDescription());
-        product.setCategory(productDetails.getCategory());
-        product.setPrice(productDetails.getPrice());
-        product.setUnit(productDetails.getUnit());
-        product.setImageUrl(productDetails.getImageUrl());
-        product.setMinStockLevel(productDetails.getMinStockLevel());
+        Category category = categoryRepository.findByName(productDTO.getCategory());
+        if (category == null) {
+            throw new RuntimeException("Category not found: " + productDTO.getCategory());
+        }
+        
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        product.setCategory(category);
+        product.setPrice(productDTO.getPrice());
+        product.setUnit(productDTO.getUnit());
+        product.setImageUrl(productDTO.getImageUrl());
+        product.setMinStockLevel(productDTO.getMinStockLevel());
         
         return productRepository.save(product);
     }
@@ -58,5 +86,9 @@ public class ProductService {
 
     public List<String> getAllCategories() {
         return productRepository.findAllCategories();
+    }
+
+    public long countAvailableProducts() {
+        return productRepository.count();
     }
 }

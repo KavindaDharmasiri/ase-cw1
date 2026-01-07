@@ -1,5 +1,7 @@
 package lk.ase.kavinda.islandlink.controller;
 
+import lk.ase.kavinda.islandlink.dto.ProductDTO;
+import lk.ase.kavinda.islandlink.dto.ProductResponseDTO;
 import lk.ase.kavinda.islandlink.entity.Product;
 import lk.ase.kavinda.islandlink.service.BulkUploadService;
 import lk.ase.kavinda.islandlink.service.ProductService;
@@ -21,8 +23,10 @@ public class ProductController {
     private BulkUploadService bulkUploadService;
 
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public List<ProductResponseDTO> getAllProducts() {
+        return productService.getAllProducts().stream()
+                .map(ProductResponseDTO::new)
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -33,15 +37,16 @@ public class ProductController {
     }
 
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return productService.createProduct(product);
+    public ProductResponseDTO createProduct(@RequestBody ProductDTO productDTO) {
+        Product product = productService.createProductFromDTO(productDTO);
+        return new ProductResponseDTO(product);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public ResponseEntity<ProductResponseDTO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO) {
         try {
-            Product updatedProduct = productService.updateProduct(id, product);
-            return ResponseEntity.ok(updatedProduct);
+            Product updatedProduct = productService.updateProductFromDTO(id, productDTO);
+            return ResponseEntity.ok(new ProductResponseDTO(updatedProduct));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

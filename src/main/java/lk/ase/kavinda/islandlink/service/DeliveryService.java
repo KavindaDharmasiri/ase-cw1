@@ -93,4 +93,18 @@ public class DeliveryService {
         delivery.setCurrentLocation(currentLocation);
         return deliveryRepository.save(delivery);
     }
+
+    public List<Delivery> getPendingDeliveries() {
+        return deliveryRepository.findByStatusIn(List.of(
+            Delivery.DeliveryStatus.SCHEDULED,
+            Delivery.DeliveryStatus.IN_TRANSIT
+        ));
+    }
+
+    public long countPendingDeliveries() {
+        return deliveryRepository.countByStatusIn(List.of(
+            Delivery.DeliveryStatus.SCHEDULED,
+            Delivery.DeliveryStatus.IN_TRANSIT
+        ));
+    }
 }

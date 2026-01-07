@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -20,8 +21,11 @@ public class OrderController {
     private OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody CreateOrderRequest request) {
+    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
         try {
+            System.out.println("Creating order for customer: " + request.getCustomerId());
+            System.out.println("Items count: " + request.getItems().size());
+            
             List<OrderService.CreateOrderItemDTO> items = request.getItems().stream()
                     .map(item -> new OrderService.CreateOrderItemDTO(item.getProductId(), item.getQuantity()))
                     .collect(java.util.stream.Collectors.toList());
@@ -30,11 +34,26 @@ public class OrderController {
                 request.getCustomerId(),
                 request.getRdcLocation(),
                 request.getDeliveryAddress(),
+                request.getEstimatedDeliveryDays(),
+                request.getCustomerPhone(),
+                request.getStoreName(),
                 items
             );
-            return ResponseEntity.ok(order);
+            
+            String orderCode = order.getOrderCode() != null ? order.getOrderCode() : "ORD-" + order.getId();
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Order placed successfully! Order Code: " + orderCode,
+                "order", orderCode
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("Error creating order: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Failed to create order: " + e.getMessage()
+            ));
         }
     }
 
@@ -94,6 +113,11 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/recent")
+    public List<Order> getRecentOrders(@RequestParam(defaultValue = "7") int days) {
+        return orderService.getRecentOrders(days);
+    }
+
     @DeleteMapping("/{id}/cancel")
     @PreAuthorize("hasRole('RETAILER') or hasRole('HEAD_OFFICE_MANAGER')")
     public ResponseEntity<?> cancelOrder(@PathVariable Long id) {
@@ -110,6 +134,9 @@ public class OrderController {
         private Long customerId;
         private String rdcLocation;
         private String deliveryAddress;
+        private Integer estimatedDeliveryDays;
+        private String customerPhone;
+        private String storeName;
         private List<OrderItemRequest> items;
 
         // Getters and setters
@@ -119,6 +146,12 @@ public class OrderController {
         public void setRdcLocation(String rdcLocation) { this.rdcLocation = rdcLocation; }
         public String getDeliveryAddress() { return deliveryAddress; }
         public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+        public Integer getEstimatedDeliveryDays() { return estimatedDeliveryDays; }
+        public void setEstimatedDeliveryDays(Integer estimatedDeliveryDays) { this.estimatedDeliveryDays = estimatedDeliveryDays; }
+        public String getCustomerPhone() { return customerPhone; }
+        public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+        public String getStoreName() { return storeName; }
+        public void setStoreName(String storeName) { this.storeName = storeName; }
         public List<OrderItemRequest> getItems() { return items; }
         public void setItems(List<OrderItemRequest> items) { this.items = items; }
     }

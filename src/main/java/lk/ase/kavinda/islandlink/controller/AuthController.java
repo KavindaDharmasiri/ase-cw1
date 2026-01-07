@@ -12,6 +12,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -59,6 +61,7 @@ public class AuthController {
 
             return ResponseEntity.ok(new JwtResponse(
                     jwt,
+                    user.getId(),
                     user.getUsername(),
                     user.getEmail(),
                     user.getRole().getName().toString()
@@ -97,6 +100,30 @@ public class AuthController {
             return ResponseEntity.ok("Profile updated successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                if (jwtUtils.validateJwtToken(token)) {
+                    String username = jwtUtils.getUserNameFromJwtToken(token);
+                    User user = userService.findByUsername(username);
+                    if (user != null) {
+                        return ResponseEntity.ok(Map.of(
+                            "valid", true,
+                            "username", user.getUsername(),
+                            "role", user.getRole().getName().toString()
+                        ));
+                    }
+                }
+            }
+            return ResponseEntity.status(401).body(Map.of("valid", false));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("valid", false));
         }
     }
 

@@ -6,6 +6,8 @@ import lk.ase.kavinda.islandlink.repository.InventoryRepository;
 import lk.ase.kavinda.islandlink.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -78,5 +80,14 @@ public class InventoryService {
 
     public List<Inventory> getLowStockItemsByRdc(String rdcLocation) {
         return inventoryRepository.findLowStockItemsByRdc(rdcLocation);
+    }
+
+    public void deleteInventoryByProduct(Long productId) {
+        inventoryRepository.deleteByProductId(productId);
+    }
+
+    @Transactional
+    public void deleteInventoryByProductAndRdc(Long productId, String rdcLocation) {
+        inventoryRepository.deleteByProductIdAndRdcLocation(productId, rdcLocation);
     }
 }

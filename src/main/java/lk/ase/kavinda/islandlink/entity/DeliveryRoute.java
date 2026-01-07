@@ -14,10 +14,10 @@ public class DeliveryRoute {
     @Column(nullable = false)
     private String routeName;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String driverName;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String vehicleNumber;
 
     @Column(nullable = false)

@@ -90,6 +90,12 @@ public class DeliveryController {
         }
     }
 
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('HEAD_OFFICE_MANAGER')")
+    public List<Delivery> getPendingDeliveries() {
+        return deliveryService.getPendingDeliveries();
+    }
+
     @PutMapping("/{id}/location")
     @PreAuthorize("hasRole('LOGISTICS')")
     public ResponseEntity<Delivery> updateDeliveryLocation(

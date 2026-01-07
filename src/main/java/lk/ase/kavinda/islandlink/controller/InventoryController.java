@@ -70,4 +70,26 @@ public class InventoryController {
     public List<Inventory> getLowStockItemsByRdc(@PathVariable String rdcLocation) {
         return inventoryService.getLowStockItemsByRdc(rdcLocation);
     }
+
+    @DeleteMapping("/product/{productId}")
+    public ResponseEntity<String> deleteInventoryByProduct(@PathVariable Long productId) {
+        try {
+            inventoryService.deleteInventoryByProduct(productId);
+            return ResponseEntity.ok("All inventory records for product deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to delete inventory: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/product/{productId}/rdc/{rdcLocation}")
+    public ResponseEntity<String> deleteInventoryByProductAndRdc(
+            @PathVariable Long productId, 
+            @PathVariable String rdcLocation) {
+        try {
+            inventoryService.deleteInventoryByProductAndRdc(productId, rdcLocation);
+            return ResponseEntity.ok("Inventory record deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to delete inventory: " + e.getMessage());
+        }
+    }
 }

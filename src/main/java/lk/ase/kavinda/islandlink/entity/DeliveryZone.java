@@ -5,8 +5,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
-public class Product {
+@Table(name = "delivery_zones")
+public class DeliveryZone {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -17,21 +17,14 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "category", nullable = false)
-    private Category category;
-
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
+    private BigDecimal deliveryFee;
 
     @Column(nullable = false)
-    private String unit;
-
-    @Column(length = 500)
-    private String imageUrl;
+    private Integer estimatedDeliveryDays;
 
     @Column(nullable = false)
-    private Integer minStockLevel;
+    private Boolean active = true;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -39,20 +32,9 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public Product() {
+    public DeliveryZone() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-    }
-
-    public Product(String name, String description, Category category, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
-        this();
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.price = price;
-        this.unit = unit;
-        this.imageUrl = imageUrl;
-        this.minStockLevel = minStockLevel;
     }
 
     // Getters and Setters
@@ -65,20 +47,14 @@ public class Product {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public BigDecimal getDeliveryFee() { return deliveryFee; }
+    public void setDeliveryFee(BigDecimal deliveryFee) { this.deliveryFee = deliveryFee; }
 
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public Integer getEstimatedDeliveryDays() { return estimatedDeliveryDays; }
+    public void setEstimatedDeliveryDays(Integer estimatedDeliveryDays) { this.estimatedDeliveryDays = estimatedDeliveryDays; }
 
-    public String getUnit() { return unit; }
-    public void setUnit(String unit) { this.unit = unit; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
-    public Integer getMinStockLevel() { return minStockLevel; }
-    public void setMinStockLevel(Integer minStockLevel) { this.minStockLevel = minStockLevel; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

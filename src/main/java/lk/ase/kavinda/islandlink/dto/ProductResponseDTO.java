@@ -1,58 +1,34 @@
-package lk.ase.kavinda.islandlink.entity;
+package lk.ase.kavinda.islandlink.dto;
 
-import jakarta.persistence.*;
+import lk.ase.kavinda.islandlink.entity.Product;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "products")
-public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class ProductResponseDTO {
     private Long id;
-
-    @Column(nullable = false)
     private String name;
-
-    @Column(length = 1000)
     private String description;
-
-    @ManyToOne
-    @JoinColumn(name = "category", nullable = false)
-    private Category category;
-
-    @Column(nullable = false, precision = 10, scale = 2)
+    private String category;
     private BigDecimal price;
-
-    @Column(nullable = false)
     private String unit;
-
-    @Column(length = 500)
     private String imageUrl;
-
-    @Column(nullable = false)
     private Integer minStockLevel;
-
-    @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public Product() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+    public ProductResponseDTO() {}
 
-    public Product(String name, String description, Category category, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
-        this();
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.price = price;
-        this.unit = unit;
-        this.imageUrl = imageUrl;
-        this.minStockLevel = minStockLevel;
+    public ProductResponseDTO(Product product) {
+        this.id = product.getId();
+        this.name = product.getName();
+        this.description = product.getDescription();
+        this.category = product.getCategory().getName();
+        this.price = product.getPrice();
+        this.unit = product.getUnit();
+        this.imageUrl = product.getImageUrl();
+        this.minStockLevel = product.getMinStockLevel();
+        this.createdAt = product.getCreatedAt();
+        this.updatedAt = product.getUpdatedAt();
     }
 
     // Getters and Setters
@@ -65,8 +41,8 @@ public class Product {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
@@ -85,9 +61,4 @@ public class Product {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }
