@@ -35,6 +35,12 @@ public class OrderService {
     @Autowired
     private FinancialService financialService;
 
+    @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
+    private NotificationService notificationService;
+
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
@@ -60,6 +66,29 @@ public class OrderService {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
+        // Use customer's assigned RDC if not specified
+        String assignedRdcLocation = rdcLocation;
+        if (customer.getServicingRdc() != null) {
+            assignedRdcLocation = customer.getServicingRdc().getName();
+        }
+
+        // Validate stock availability before creating order
+        for (CreateOrderItemDTO item : items) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
+            
+            // Check if sufficient stock exists (assuming RDC ID 1 for now)
+            Long rdcId = customer.getServicingRdc() != null ? customer.getServicingRdc().getId() : 1L;
+            Integer availableStock = inventoryService.getInventoryByProductAndRdc(product.getId(), rdcId)
+                    .map(inventory -> inventory.getAvailableStock())
+                    .orElse(0);
+            
+            if (availableStock < item.getQuantity()) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName() + 
+                                         ". Available: " + availableStock + ", Requested: " + item.getQuantity());
+            }
+        }
+
         // Validate credit limit for credit customers
         BigDecimal orderTotal = calculateOrderTotal(items);
         if (customer.getPaymentType() == User.PaymentType.CREDIT) {
@@ -72,7 +101,7 @@ public class OrderService {
         Order order = new Order();
         order.setOrderCode(generateOrderCode());
         order.setCustomer(customer);
-        order.setRdcLocation(rdcLocation);
+        order.setRdcLocation(assignedRdcLocation);
         order.setDeliveryAddress(deliveryAddress);
         order.setCustomerPhone(customerPhone != null ? customerPhone : customer.getPhone());
         order.setStoreName(storeName != null ? storeName : customer.getFullName());
@@ -98,6 +127,9 @@ public class OrderService {
             
             orderItemRepository.save(orderItem);
         }
+
+        // Reload order with items for financial service
+        order = orderRepository.findById(order.getId()).orElse(order);
 
         // Update customer outstanding balance for credit customers
         if (customer.getPaymentType() == User.PaymentType.CREDIT) {
@@ -193,6 +225,55 @@ public class OrderService {
             total = total.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
         return total;
+    }
+
+    @Transactional
+    public Order approveOrder(Long orderId, Long rdcId, Long staffUserId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new RuntimeException("Order is not in pending status");
+        }
+        
+        // Check stock availability and allocate
+        for (OrderItem item : order.getOrderItems()) {
+            boolean allocated = inventoryService.allocateStock(
+                item.getProduct().getId(), 
+                rdcId, 
+                item.getQuantity(),
+                orderId,
+                staffUserId
+            );
+            
+            if (!allocated) {
+                throw new RuntimeException("Insufficient stock for product: " + item.getProduct().getName());
+            }
+        }
+        
+        // Update order status
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        order = orderRepository.save(order);
+        
+        // Notify customer
+        notificationService.notifyOrderApproved(order);
+        
+        return order;
+    }
+
+    @Transactional
+    public Order rejectOrder(Long orderId, String rejectionReason, Long staffUserId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        // Could add rejection reason field to Order entity
+        order = orderRepository.save(order);
+        
+        // Notify customer
+        notificationService.notifyOrderRejected(order, rejectionReason);
+        
+        return order;
     }
 
     // DTO class for order creation

@@ -2,14 +2,17 @@ package lk.ase.kavinda.islandlink.controller;
 
 import lk.ase.kavinda.islandlink.dto.ProductDTO;
 import lk.ase.kavinda.islandlink.dto.ProductResponseDTO;
+import lk.ase.kavinda.islandlink.entity.Inventory;
 import lk.ase.kavinda.islandlink.entity.Product;
 import lk.ase.kavinda.islandlink.service.BulkUploadService;
 import lk.ase.kavinda.islandlink.service.ProductService;
+import lk.ase.kavinda.islandlink.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -22,11 +25,44 @@ public class ProductController {
     @Autowired
     private BulkUploadService bulkUploadService;
 
+    @Autowired
+    private InventoryService inventoryService;
+
+    @GetMapping("/catalog/{rdcId}")
+    public List<ProductResponseDTO> getProductCatalogWithStock(@PathVariable Long rdcId) {
+        System.out.println("Getting catalog for RDC ID: " + rdcId);
+        return productService.getAllProducts().stream()
+                .map(product -> {
+                    ProductResponseDTO dto = new ProductResponseDTO(product);
+                    // Get available stock for this RDC
+                    Integer availableStock = inventoryService.getInventoryByProductAndRdc(product.getId(), rdcId)
+                            .map(inventory -> {
+                                System.out.println("Product " + product.getName() + " has stock: " + inventory.getAvailableStock());
+                                return inventory.getAvailableStock();
+                            })
+                            .orElse(0);
+                    System.out.println("Product " + product.getName() + " final stock: " + availableStock);
+                    dto.setAvailableStock(availableStock);
+                    return dto;
+                })
+                .toList();
+    }
+
     @GetMapping
     public List<ProductResponseDTO> getAllProducts() {
         return productService.getAllProducts().stream()
                 .map(ProductResponseDTO::new)
                 .toList();
+    }
+
+    @GetMapping("/debug/inventory/{rdcId}")
+    public ResponseEntity<?> debugInventory(@PathVariable Long rdcId) {
+        List<Inventory> inventory = inventoryService.getInventoryByRdc(rdcId);
+        return ResponseEntity.ok(Map.of(
+            "rdcId", rdcId,
+            "inventoryCount", inventory.size(),
+            "inventory", inventory
+        ));
     }
 
     @GetMapping("/{id}")

@@ -6,6 +6,7 @@ import lk.ase.kavinda.islandlink.dto.RegisterRequest;
 import lk.ase.kavinda.islandlink.entity.User;
 import lk.ase.kavinda.islandlink.security.JwtUtils;
 import lk.ase.kavinda.islandlink.service.UserService;
+import lk.ase.kavinda.islandlink.service.AuditService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +30,9 @@ public class AuthController {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private AuditService auditService;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
         try {
@@ -40,7 +44,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         try {
             System.out.println("Login attempt for username: " + loginRequest.getUsername());
             
@@ -63,6 +67,11 @@ public class AuthController {
 
             String jwt = jwtUtils.generateJwtToken(loginRequest.getUsername());
             System.out.println("JWT token generated successfully");
+
+            // Log successful login
+            String clientIp = getClientIpAddress(request);
+            auditService.logAction(user.getUsername(), "LOGIN", "USER", user.getId().toString(), 
+                "Successful login with role: " + user.getRole().getName(), clientIp);
 
             JwtResponse response = new JwtResponse(
                     jwt,
@@ -158,5 +167,13 @@ public class AuthController {
         public void setFullName(String fullName) { this.fullName = fullName; }
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

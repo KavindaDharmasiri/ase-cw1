@@ -2,6 +2,7 @@ package lk.ase.kavinda.islandlink.service;
 
 import lk.ase.kavinda.islandlink.entity.Notification;
 import lk.ase.kavinda.islandlink.entity.User;
+import lk.ase.kavinda.islandlink.entity.Order;
 import lk.ase.kavinda.islandlink.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,5 +42,23 @@ public class NotificationService {
             notification.setIsRead(true);
             notificationRepository.save(notification);
         }
+    }
+
+    public void notifyOrderApproved(Order order) {
+        createNotification(
+            order.getCustomer(),
+            "Order Approved",
+            "Your order " + order.getOrderCode() + " has been approved and is being processed.",
+            Notification.NotificationType.ORDER_CONFIRMED
+        );
+    }
+
+    public void notifyOrderRejected(Order order, String reason) {
+        createNotification(
+            order.getCustomer(),
+            "Order Rejected",
+            "Your order " + order.getOrderCode() + " has been rejected. Reason: " + reason,
+            Notification.NotificationType.SYSTEM_UPDATE
+        );
     }
 }

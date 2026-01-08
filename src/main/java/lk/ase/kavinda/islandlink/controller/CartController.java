@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -30,48 +31,64 @@ public class CartController {
     @Autowired
     private ProductRepository productRepository;
 
-  @GetMapping
+    @GetMapping
     public List<CartItemDTO> getCartItems(Authentication authentication) {
-        System.out.println("Getting cart items for user: " + authentication.getName());
-        User user = userRepository.findByUsername(authentication.getName()).orElse(null);
-        if (user == null) {
-            System.out.println("User not found");
+        try {
+            System.out.println("Getting cart items for user: " + authentication.getName());
+            User user = userRepository.findByUsername(authentication.getName()).orElse(null);
+            if (user == null) {
+                System.out.println("User not found");
+                return List.of();
+            }
+            
+            List<Cart> cartItems = cartRepository.findByUser(user);
+            System.out.println("Found " + cartItems.size() + " cart items");
+            return cartItems.stream()
+                    .map(this::convertToDTO)
+                    .filter(dto -> dto != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Error getting cart items: " + e.getMessage());
+            e.printStackTrace();
             return List.of();
         }
-        
-        List<Cart> cartItems = cartRepository.findByUser(user);
-        System.out.println("Found " + cartItems.size() + " cart items");
-        return cartItems.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     private CartItemDTO convertToDTO(Cart cart) {
+        if (cart == null || cart.getProduct() == null) {
+            return null;
+        }
+        
+        Product product = cart.getProduct();
+        Double price = product.getPrice() != null ? product.getPrice().doubleValue() : 0.0;
+        
         CartItemDTO.ProductDTO productDTO = new CartItemDTO.ProductDTO(
-            cart.getProduct().getId(),
-            cart.getProduct().getName(),
-            cart.getProduct().getPrice().doubleValue(),
-            cart.getProduct().getImageUrl(),
-            Integer.parseInt(cart.getProduct().getUnit())
+            product.getId(),
+            product.getName(),
+            price,
+            product.getImageUrl(),
+            1 // Default unit value since unit is a string like "kg", "bottle", etc.
         );
         
         return new CartItemDTO(
             cart.getId(),
             productDTO,
             cart.getQuantity(),
-            cart.getCreatedAt().toString()
+            cart.getCreatedAt() != null ? cart.getCreatedAt().toString() : ""
         );
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestBody AddToCartRequest request, Authentication authentication) {
+    public ResponseEntity<?> addToCart(@RequestBody AddToCartRequest request, Authentication authentication) {
         try {
             User user = userRepository.findByUsername(authentication.getName()).orElse(null);
             if (user == null) {
-                return ResponseEntity.badRequest().body("User not found");
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "User not found"));
             }
 
             Product product = productRepository.findById(request.getProductId()).orElse(null);
             if (product == null) {
-                return ResponseEntity.badRequest().body("Product not found");
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Product not found"));
             }
 
             Optional<Cart> existingCart = cartRepository.findByUserAndProductId(user, request.getProductId());
@@ -85,9 +102,9 @@ public class CartController {
                 cartRepository.save(cart);
             }
 
-            return ResponseEntity.ok("Item added to cart");
+            return ResponseEntity.ok(Map.of("success", true, "message", "Item added to cart"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error adding to cart");
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Error adding to cart"));
         }
     }
 

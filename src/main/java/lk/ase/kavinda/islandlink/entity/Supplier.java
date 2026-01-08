@@ -26,6 +26,10 @@ public class Supplier {
     @Column(length = 1000)
     private String address;
 
+    private String paymentTerms; // e.g. "30 days"
+    private Integer leadTimeDays;
+    private String taxId;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -73,6 +77,15 @@ public class Supplier {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getPaymentTerms() { return paymentTerms; }
+    public void setPaymentTerms(String paymentTerms) { this.paymentTerms = paymentTerms; }
+
+    public Integer getLeadTimeDays() { return leadTimeDays; }
+    public void setLeadTimeDays(Integer leadTimeDays) { this.leadTimeDays = leadTimeDays; }
+
+    public String getTaxId() { return taxId; }
+    public void setTaxId(String taxId) { this.taxId = taxId; }
 
     @PreUpdate
     public void preUpdate() {

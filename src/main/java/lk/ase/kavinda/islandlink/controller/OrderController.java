@@ -129,6 +129,42 @@ public class OrderController {
         }
     }
 
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasRole('RDC_STAFF')")
+    public ResponseEntity<?> approveOrder(@PathVariable Long id, @RequestBody ApproveOrderRequest request) {
+        try {
+            Order order = orderService.approveOrder(id, request.getRdcId(), request.getStaffUserId());
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Order approved successfully",
+                "order", order
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('RDC_STAFF')")
+    public ResponseEntity<?> rejectOrder(@PathVariable Long id, @RequestBody RejectOrderRequest request) {
+        try {
+            Order order = orderService.rejectOrder(id, request.getRejectionReason(), request.getStaffUserId());
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Order rejected successfully",
+                "order", order
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
+
     // DTO classes
     public static class CreateOrderRequest {
         private Long customerId;
@@ -172,5 +208,25 @@ public class OrderController {
 
         public List<OrderItemRequest> getItems() { return items; }
         public void setItems(List<OrderItemRequest> items) { this.items = items; }
+    }
+
+    public static class ApproveOrderRequest {
+        private Long rdcId;
+        private Long staffUserId;
+
+        public Long getRdcId() { return rdcId; }
+        public void setRdcId(Long rdcId) { this.rdcId = rdcId; }
+        public Long getStaffUserId() { return staffUserId; }
+        public void setStaffUserId(Long staffUserId) { this.staffUserId = staffUserId; }
+    }
+
+    public static class RejectOrderRequest {
+        private String rejectionReason;
+        private Long staffUserId;
+
+        public String getRejectionReason() { return rejectionReason; }
+        public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+        public Long getStaffUserId() { return staffUserId; }
+        public void setStaffUserId(Long staffUserId) { this.staffUserId = staffUserId; }
     }
 }

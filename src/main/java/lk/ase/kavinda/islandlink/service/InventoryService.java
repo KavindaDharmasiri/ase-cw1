@@ -147,4 +147,35 @@ public class InventoryService {
             inventoryRepository.save(newInventory);
         }
     }
+
+    @Transactional
+    public boolean allocateStock(Long productId, Long rdcId, Integer quantity, Long orderId, Long staffUserId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        RDC rdc = rdcRepository.findById(rdcId)
+                .orElseThrow(() -> new RuntimeException("RDC not found"));
+
+        Optional<Inventory> inventoryOpt = inventoryRepository.findByProductAndRdc(product, rdc);
+        
+        if (inventoryOpt.isPresent()) {
+            Inventory inventory = inventoryOpt.get();
+            
+            // Check if sufficient stock available
+            if (inventory.getAvailableStock() >= quantity) {
+                // Move stock from Available to Allocated
+                inventory.setAvailableStock(inventory.getAvailableStock() - quantity);
+                inventory.setAllocatedStock(inventory.getAllocatedStock() + quantity);
+                inventory.setLastUpdated(LocalDateTime.now());
+                inventoryRepository.save(inventory);
+                
+                // Log the allocation (could create StockAllocation entity)
+                System.out.println("Allocated " + quantity + " units of " + product.getName() + 
+                                 " for order " + orderId + " by staff " + staffUserId);
+                
+                return true;
+            }
+        }
+        
+        return false; // Insufficient stock
+    }
 }

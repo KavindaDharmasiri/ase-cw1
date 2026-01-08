@@ -115,7 +115,11 @@ public class FinancialService {
     }
 
     private void recordCostOfGoodsSold(Order order) {
-        BigDecimal totalCogs = order.getItems().stream()
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return; // No items to process
+        }
+        
+        BigDecimal totalCogs = order.getOrderItems().stream()
                 .map(item -> item.getProduct().getPurchasePrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         

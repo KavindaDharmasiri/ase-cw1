@@ -17,6 +17,7 @@ public class ProductResponseDTO {
     private String unit;
     private String imageUrl;
     private Integer minStockLevel;
+    private Integer availableStock = 0;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -33,7 +34,7 @@ public class ProductResponseDTO {
         this.price = product.getPrice();
         this.taxRate = product.getTaxRate();
         this.unit = product.getUnit();
-        this.imageUrl = product.getImageUrl();
+        this.imageUrl = product.getImageUrl() != null && !product.getImageUrl().isEmpty() ? product.getImageUrl() : null;
         this.minStockLevel = product.getMinStockLevel();
         this.createdAt = product.getCreatedAt();
         this.updatedAt = product.getUpdatedAt();
@@ -81,4 +82,7 @@ public class ProductResponseDTO {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Integer getAvailableStock() { return availableStock; }
+    public void setAvailableStock(Integer availableStock) { this.availableStock = availableStock; }
 }

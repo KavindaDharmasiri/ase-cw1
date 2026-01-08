@@ -39,13 +39,18 @@ public class GoodsReceiptService {
         GoodsReceiptNote savedGrn = grnRepository.save(grn);
         
         // Update inventory for accepted quantities
-        for (GRNItem item : grn.getItems()) {
-            if (item.getDeliveredQuantity() > 0) {
-                inventoryService.addStock(
-                    item.getProduct().getId(),
-                    grn.getRdc().getId(),
-                    item.getDeliveredQuantity() - item.getDamagedQuantity()
-                );
+        if (grn.getItems() != null) {
+            for (GRNItem item : grn.getItems()) {
+                if (item.getDeliveredQuantity() != null && item.getDeliveredQuantity() > 0) {
+                    Integer acceptedQty = item.getDeliveredQuantity() - (item.getDamagedQuantity() != null ? item.getDamagedQuantity() : 0);
+                    if (acceptedQty > 0) {
+                        inventoryService.addStock(
+                            item.getProduct().getId(),
+                            grn.getRdc().getId(),
+                            acceptedQty
+                        );
+                    }
+                }
             }
         }
         
