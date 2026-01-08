@@ -62,18 +62,23 @@ public class AuthController {
             System.out.println("Authentication successful for: " + loginRequest.getUsername());
 
             String jwt = jwtUtils.generateJwtToken(loginRequest.getUsername());
+            System.out.println("JWT token generated successfully");
 
-            return ResponseEntity.ok(new JwtResponse(
+            JwtResponse response = new JwtResponse(
                     jwt,
                     user.getId(),
                     user.getUsername(),
                     user.getEmail(),
                     user.getRole() != null ? user.getRole().getName().toString() : "NO_ROLE"
-            ));
+            );
+            
+            System.out.println("Response created successfully");
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            System.out.println("Authentication failed: " + e.getMessage());
+            System.out.println("Login error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Invalid credentials");
+            return ResponseEntity.status(500).body("Authentication failed: " + e.getMessage());
         }
     }
 

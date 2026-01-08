@@ -1,27 +1,19 @@
 package lk.ase.kavinda.islandlink.repository;
 
 import lk.ase.kavinda.islandlink.entity.Inventory;
+import lk.ase.kavinda.islandlink.entity.Product;
+import lk.ase.kavinda.islandlink.entity.RDC;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
-@Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-    List<Inventory> findByRdcLocation(String rdcLocation);
+    Optional<Inventory> findByProductAndRdc(Product product, RDC rdc);
+    @Query("SELECT i FROM Inventory i WHERE i.rdc = :rdc")
+    List<Inventory> findByRdc(@Param("rdc") RDC rdc);
     
-    Optional<Inventory> findByProductIdAndRdcLocation(Long productId, String rdcLocation);
-    
-    @Query("SELECT i FROM Inventory i WHERE i.currentStock <= i.product.minStockLevel")
-    List<Inventory> findLowStockItems();
-    
-    @Query("SELECT i FROM Inventory i WHERE i.rdcLocation = ?1 AND i.currentStock <= i.product.minStockLevel")
-    List<Inventory> findLowStockItemsByRdc(String rdcLocation);
-    
-    void deleteByProductId(Long productId);
-    
-    void deleteByProductIdAndRdcLocation(Long productId, String rdcLocation);
+    @Query("SELECT i FROM Inventory i WHERE i.availableStock > 0")
+    List<Inventory> findAvailableStock();
 }

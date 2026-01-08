@@ -18,22 +18,13 @@ public class PurchaseOrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(nullable = false)
-    private Integer quantity;
-
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal unitPrice;
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal totalPrice;
-
-    @Column(nullable = false)
+    private Integer orderedQuantity;
     private Integer receivedQuantity = 0;
+    private BigDecimal purchasePrice;
+    private BigDecimal lineTotal;
 
-    @Column(nullable = false)
-    private Integer damagedQuantity = 0;
+    public PurchaseOrderItem() {}
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -43,18 +34,15 @@ public class PurchaseOrderItem {
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
-
-    public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
-
-    public BigDecimal getTotalPrice() { return totalPrice; }
-    public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
+    public Integer getOrderedQuantity() { return orderedQuantity; }
+    public void setOrderedQuantity(Integer orderedQuantity) { this.orderedQuantity = orderedQuantity; }
 
     public Integer getReceivedQuantity() { return receivedQuantity; }
     public void setReceivedQuantity(Integer receivedQuantity) { this.receivedQuantity = receivedQuantity; }
 
-    public Integer getDamagedQuantity() { return damagedQuantity; }
-    public void setDamagedQuantity(Integer damagedQuantity) { this.damagedQuantity = damagedQuantity; }
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    public BigDecimal getLineTotal() { return lineTotal; }
+    public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }
 }

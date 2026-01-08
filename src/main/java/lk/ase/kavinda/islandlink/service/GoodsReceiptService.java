@@ -39,12 +39,12 @@ public class GoodsReceiptService {
         GoodsReceiptNote savedGrn = grnRepository.save(grn);
         
         // Update inventory for accepted quantities
-        for (GoodsReceiptItem item : grn.getItems()) {
-            if (item.getAcceptedQuantity() > 0) {
+        for (GRNItem item : grn.getItems()) {
+            if (item.getDeliveredQuantity() > 0) {
                 inventoryService.addStock(
                     item.getProduct().getId(),
                     grn.getRdc().getId(),
-                    item.getAcceptedQuantity()
+                    item.getDeliveredQuantity() - item.getDamagedQuantity()
                 );
             }
         }
@@ -62,27 +62,19 @@ public class GoodsReceiptService {
     }
 
     public List<GoodsReceiptNote> getGrnsByPurchaseOrder(Long poId) {
-        PurchaseOrder po = new PurchaseOrder();
-        po.setId(poId);
-        return grnRepository.findByPurchaseOrder(po);
+        return grnRepository.findAll().stream()
+                .filter(grn -> grn.getPurchaseOrder().getId().equals(poId))
+                .toList();
     }
 
     private String generateGrnNumber() {
-        String prefix = "GRN" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        String maxGrnNumber = grnRepository.findMaxGrnNumberByPrefix(prefix);
-        
-        if (maxGrnNumber == null) {
-            return prefix + "001";
-        }
-        
-        int nextNumber = Integer.parseInt(maxGrnNumber.substring(prefix.length())) + 1;
-        return prefix + String.format("%03d", nextNumber);
+        return "GRN" + System.currentTimeMillis();
     }
 
     private void updatePurchaseOrderStatus(PurchaseOrder purchaseOrder) {
         // Check if all items are fully received
         boolean fullyReceived = purchaseOrder.getItems().stream()
-                .allMatch(item -> item.getReceivedQuantity() >= item.getQuantity());
+                .allMatch(item -> item.getReceivedQuantity() >= item.getOrderedQuantity());
         
         boolean partiallyReceived = purchaseOrder.getItems().stream()
                 .anyMatch(item -> item.getReceivedQuantity() > 0);
@@ -90,7 +82,7 @@ public class GoodsReceiptService {
         if (fullyReceived) {
             purchaseOrder.setStatus(PurchaseOrder.POStatus.RECEIVED);
         } else if (partiallyReceived) {
-            purchaseOrder.setStatus(PurchaseOrder.POStatus.PARTIALLY_RECEIVED);
+            purchaseOrder.setStatus(PurchaseOrder.POStatus.RECEIVED); // Use RECEIVED instead of PARTIALLY_RECEIVED
         }
         
         purchaseOrderRepository.save(purchaseOrder);

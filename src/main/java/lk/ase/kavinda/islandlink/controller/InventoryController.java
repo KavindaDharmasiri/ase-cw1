@@ -20,16 +20,16 @@ public class InventoryController {
         return inventoryService.getAllInventory();
     }
 
-    @GetMapping("/rdc/{rdcLocation}")
-    public List<Inventory> getInventoryByRdc(@PathVariable String rdcLocation) {
-        return inventoryService.getInventoryByRdc(rdcLocation);
+    @GetMapping("/rdc/{rdcId}")
+    public List<Inventory> getInventoryByRdc(@PathVariable Long rdcId) {
+        return inventoryService.getInventoryByRdc(rdcId);
     }
 
-    @GetMapping("/product/{productId}/rdc/{rdcLocation}")
+    @GetMapping("/product/{productId}/rdc/{rdcId}")
     public ResponseEntity<Inventory> getInventoryByProductAndRdc(
             @PathVariable Long productId, 
-            @PathVariable String rdcLocation) {
-        return inventoryService.getInventoryByProductAndRdc(productId, rdcLocation)
+            @PathVariable Long rdcId) {
+        return inventoryService.getInventoryByProductAndRdc(productId, rdcId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -37,10 +37,10 @@ public class InventoryController {
     @PutMapping("/update")
     public ResponseEntity<Inventory> updateStock(
             @RequestParam Long productId,
-            @RequestParam String rdcLocation,
+            @RequestParam Long rdcId,
             @RequestParam Integer newStock) {
         try {
-            Inventory inventory = inventoryService.updateStock(productId, rdcLocation, newStock);
+            Inventory inventory = inventoryService.updateStock(productId, rdcId, newStock);
             return ResponseEntity.ok(inventory);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -50,11 +50,11 @@ public class InventoryController {
     @PostMapping("/transfer")
     public ResponseEntity<Inventory> transferStock(
             @RequestParam Long productId,
-            @RequestParam String fromRdc,
-            @RequestParam String toRdc,
+            @RequestParam Long fromRdcId,
+            @RequestParam Long toRdcId,
             @RequestParam Integer quantity) {
         try {
-            Inventory inventory = inventoryService.transferStock(productId, fromRdc, toRdc, quantity);
+            Inventory inventory = inventoryService.transferStock(productId, fromRdcId, toRdcId, quantity);
             return ResponseEntity.ok(inventory);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
@@ -66,27 +66,17 @@ public class InventoryController {
         return inventoryService.getLowStockItems();
     }
 
-    @GetMapping("/low-stock/rdc/{rdcLocation}")
-    public List<Inventory> getLowStockItemsByRdc(@PathVariable String rdcLocation) {
-        return inventoryService.getLowStockItemsByRdc(rdcLocation);
+    @GetMapping("/low-stock/rdc/{rdcId}")
+    public List<Inventory> getLowStockItemsByRdc(@PathVariable Long rdcId) {
+        return inventoryService.getLowStockItemsByRdc(rdcId);
     }
 
-    @DeleteMapping("/product/{productId}")
-    public ResponseEntity<String> deleteInventoryByProduct(@PathVariable Long productId) {
-        try {
-            inventoryService.deleteInventoryByProduct(productId);
-            return ResponseEntity.ok("All inventory records for product deleted successfully");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to delete inventory: " + e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/product/{productId}/rdc/{rdcLocation}")
+    @DeleteMapping("/product/{productId}/rdc/{rdcId}")
     public ResponseEntity<String> deleteInventoryByProductAndRdc(
             @PathVariable Long productId, 
-            @PathVariable String rdcLocation) {
+            @PathVariable Long rdcId) {
         try {
-            inventoryService.deleteInventoryByProductAndRdc(productId, rdcLocation);
+            inventoryService.deleteInventoryByProductAndRdc(productId, rdcId);
             return ResponseEntity.ok("Inventory record deleted successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to delete inventory: " + e.getMessage());

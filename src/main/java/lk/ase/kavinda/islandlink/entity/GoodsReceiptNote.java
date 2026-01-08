@@ -1,6 +1,7 @@
 package lk.ase.kavinda.islandlink.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,7 +12,7 @@ public class GoodsReceiptNote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false)
     private String grnNumber;
 
     @ManyToOne
@@ -22,27 +23,15 @@ public class GoodsReceiptNote {
     @JoinColumn(name = "rdc_id", nullable = false)
     private RDC rdc;
 
-    @Column(nullable = false)
-    private LocalDateTime receivedDate;
+    private LocalDate deliveryReceiveDate;
+    private LocalDateTime grnDate = LocalDateTime.now();
+    private String warehouseLocation;
 
-    @Column(nullable = false)
-    private String receivedBy;
+    @OneToMany(mappedBy = "grn", cascade = CascadeType.ALL)
+    private List<GRNItem> items;
 
-    @OneToMany(mappedBy = "goodsReceiptNote", cascade = CascadeType.ALL)
-    private List<GoodsReceiptItem> items;
+    public GoodsReceiptNote() {}
 
-    @Column(length = 1000)
-    private String remarks;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    public GoodsReceiptNote() {
-        this.createdAt = LocalDateTime.now();
-        this.receivedDate = LocalDateTime.now();
-    }
-
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -55,18 +44,15 @@ public class GoodsReceiptNote {
     public RDC getRdc() { return rdc; }
     public void setRdc(RDC rdc) { this.rdc = rdc; }
 
-    public LocalDateTime getReceivedDate() { return receivedDate; }
-    public void setReceivedDate(LocalDateTime receivedDate) { this.receivedDate = receivedDate; }
+    public LocalDate getDeliveryReceiveDate() { return deliveryReceiveDate; }
+    public void setDeliveryReceiveDate(LocalDate deliveryReceiveDate) { this.deliveryReceiveDate = deliveryReceiveDate; }
 
-    public String getReceivedBy() { return receivedBy; }
-    public void setReceivedBy(String receivedBy) { this.receivedBy = receivedBy; }
+    public LocalDateTime getGrnDate() { return grnDate; }
+    public void setGrnDate(LocalDateTime grnDate) { this.grnDate = grnDate; }
 
-    public List<GoodsReceiptItem> getItems() { return items; }
-    public void setItems(List<GoodsReceiptItem> items) { this.items = items; }
+    public String getWarehouseLocation() { return warehouseLocation; }
+    public void setWarehouseLocation(String warehouseLocation) { this.warehouseLocation = warehouseLocation; }
 
-    public String getRemarks() { return remarks; }
-    public void setRemarks(String remarks) { this.remarks = remarks; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public List<GRNItem> getItems() { return items; }
+    public void setItems(List<GRNItem> items) { this.items = items; }
 }

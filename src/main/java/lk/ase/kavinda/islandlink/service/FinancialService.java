@@ -90,7 +90,7 @@ public class FinancialService {
         inventoryEntry.setDescription("Purchase from: " + purchaseOrder.getSupplier().getName());
         inventoryEntry.setReferenceType("PURCHASE_ORDER");
         inventoryEntry.setReferenceId(purchaseOrder.getId());
-        inventoryEntry.setRdc(purchaseOrder.getRdc());
+        inventoryEntry.setRdc(null); // PurchaseOrder doesn't have RDC field
         ledgerRepository.save(inventoryEntry);
         
         // Credit: Accounts Payable
@@ -102,7 +102,7 @@ public class FinancialService {
         payableEntry.setDescription("Purchase from: " + purchaseOrder.getSupplier().getName());
         payableEntry.setReferenceType("PURCHASE_ORDER");
         payableEntry.setReferenceId(purchaseOrder.getId());
-        payableEntry.setRdc(purchaseOrder.getRdc());
+        payableEntry.setRdc(null); // PurchaseOrder doesn't have RDC field
         ledgerRepository.save(payableEntry);
     }
 

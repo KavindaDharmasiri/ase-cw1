@@ -118,6 +118,10 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    private String generatePONumber() {
+        return "PO" + System.currentTimeMillis();
+    }
+
     public User findByUsername(String username) {
         return userRepository.findByUsername(username).orElse(null);
     }
