@@ -7,7 +7,11 @@ public class ProductDTO {
     private String name;
     private String description;
     private String category;
+    private String sku;
+    private String brand;
+    private BigDecimal purchasePrice;
     private BigDecimal price;
+    private BigDecimal taxRate;
     private String unit;
     private String imageUrl;
     private Integer minStockLevel;
@@ -15,10 +19,13 @@ public class ProductDTO {
     // Constructors
     public ProductDTO() {}
 
-    public ProductDTO(String name, String description, String category, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
+    public ProductDTO(String name, String description, String category, String sku, String brand, BigDecimal purchasePrice, BigDecimal price, String unit, String imageUrl, Integer minStockLevel) {
         this.name = name;
         this.description = description;
         this.category = category;
+        this.sku = sku;
+        this.brand = brand;
+        this.purchasePrice = purchasePrice;
         this.price = price;
         this.unit = unit;
         this.imageUrl = imageUrl;
@@ -37,6 +44,18 @@ public class ProductDTO {
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public String getSku() { return sku; }
+    public void setSku(String sku) { this.sku = sku; }
+
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
+
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    public BigDecimal getTaxRate() { return taxRate; }
+    public void setTaxRate(BigDecimal taxRate) { this.taxRate = taxRate; }
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }

@@ -9,7 +9,11 @@ public class ProductResponseDTO {
     private String name;
     private String description;
     private String category;
+    private String sku;
+    private String brand;
+    private BigDecimal purchasePrice;
     private BigDecimal price;
+    private BigDecimal taxRate;
     private String unit;
     private String imageUrl;
     private Integer minStockLevel;
@@ -23,7 +27,11 @@ public class ProductResponseDTO {
         this.name = product.getName();
         this.description = product.getDescription();
         this.category = product.getCategory().getName();
+        this.sku = product.getSku();
+        this.brand = product.getBrand();
+        this.purchasePrice = product.getPurchasePrice();
         this.price = product.getPrice();
+        this.taxRate = product.getTaxRate();
         this.unit = product.getUnit();
         this.imageUrl = product.getImageUrl();
         this.minStockLevel = product.getMinStockLevel();
@@ -43,6 +51,18 @@ public class ProductResponseDTO {
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public String getSku() { return sku; }
+    public void setSku(String sku) { this.sku = sku; }
+
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
+
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    public BigDecimal getTaxRate() { return taxRate; }
+    public void setTaxRate(BigDecimal taxRate) { this.taxRate = taxRate; }
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }

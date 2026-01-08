@@ -50,12 +50,16 @@ public class AuthController {
                 return ResponseEntity.badRequest().body("User not found");
             }
             
+            System.out.println("User found: " + user.getUsername() + ", Role: " + (user.getRole() != null ? user.getRole().getName() : "NULL"));
+            
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
                             loginRequest.getPassword()
                     )
             );
+            
+            System.out.println("Authentication successful for: " + loginRequest.getUsername());
 
             String jwt = jwtUtils.generateJwtToken(loginRequest.getUsername());
 
@@ -64,7 +68,7 @@ public class AuthController {
                     user.getId(),
                     user.getUsername(),
                     user.getEmail(),
-                    user.getRole().getName().toString()
+                    user.getRole() != null ? user.getRole().getName().toString() : "NO_ROLE"
             ));
         } catch (Exception e) {
             System.out.println("Authentication failed: " + e.getMessage());
@@ -116,7 +120,7 @@ public class AuthController {
                         return ResponseEntity.ok(Map.of(
                             "valid", true,
                             "username", user.getUsername(),
-                            "role", user.getRole().getName().toString()
+                            "role", user.getRole() != null ? user.getRole().getName().toString() : "NO_ROLE"
                         ));
                     }
                 }

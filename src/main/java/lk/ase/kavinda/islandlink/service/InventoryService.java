@@ -90,4 +90,21 @@ public class InventoryService {
     public void deleteInventoryByProductAndRdc(Long productId, String rdcLocation) {
         inventoryRepository.deleteByProductIdAndRdcLocation(productId, rdcLocation);
     }
+
+    public void addStock(Long productId, Long rdcId, Integer quantity) {
+        // Convert rdcId to rdcLocation for compatibility
+        String rdcLocation = "RDC_" + rdcId;
+        Optional<Inventory> inventoryOpt = inventoryRepository.findByProductIdAndRdcLocation(productId, rdcLocation);
+        
+        if (inventoryOpt.isPresent()) {
+            Inventory inventory = inventoryOpt.get();
+            inventory.setCurrentStock(inventory.getCurrentStock() + quantity);
+            inventoryRepository.save(inventory);
+        } else {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+            Inventory newInventory = new Inventory(product, rdcLocation, quantity);
+            inventoryRepository.save(newInventory);
+        }
+    }
 }

@@ -50,9 +50,15 @@ public class AdminController {
                     user.getEmail(),
                     user.getUsername(),
                     user.getRole().getName().name(),
-                    true, // enabled - assuming all users are enabled
-                    null, // lastLogin - not available in current entity
-                    null  // createdAt - not available in current entity
+                    true, // enabled
+                    null, // lastLogin
+                    null, // createdAt
+                    user.getBusinessName(),
+                    user.getDistrict(),
+                    user.getServicingRdc() != null ? user.getServicingRdc().getId() : null,
+                    user.getPaymentType() != null ? user.getPaymentType().name() : null,
+                    user.getCreditLimit(),
+                    user.getOutstandingBalance()
                 ))
                 .collect(Collectors.toList());
     }
@@ -88,7 +94,13 @@ public class AdminController {
                 updatedUser.getRole().getName().name(),
                 true,
                 null,
-                null
+                null,
+                updatedUser.getBusinessName(),
+                updatedUser.getDistrict(),
+                updatedUser.getServicingRdc() != null ? updatedUser.getServicingRdc().getId() : null,
+                updatedUser.getPaymentType() != null ? updatedUser.getPaymentType().name() : null,
+                updatedUser.getCreditLimit(),
+                updatedUser.getOutstandingBalance()
             );
             
             return ResponseEntity.ok(responseDTO);

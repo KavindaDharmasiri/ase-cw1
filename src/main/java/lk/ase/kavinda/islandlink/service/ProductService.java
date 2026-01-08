@@ -7,6 +7,7 @@ import lk.ase.kavinda.islandlink.repository.CategoryRepository;
 import lk.ase.kavinda.islandlink.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,6 +46,27 @@ public class ProductService {
         product.setImageUrl(productDTO.getImageUrl());
         product.setMinStockLevel(productDTO.getMinStockLevel());
         
+        // Auto-generate SKU if not provided
+        if (productDTO.getSku() == null || productDTO.getSku().trim().isEmpty()) {
+            String sku = generateSKU(productDTO.getName(), category.getName());
+            product.setSku(sku);
+        } else {
+            product.setSku(productDTO.getSku());
+        }
+        
+        // Set brand or default
+        product.setBrand(productDTO.getBrand() != null && !productDTO.getBrand().trim().isEmpty() ? productDTO.getBrand() : "Generic");
+        
+        // Auto-calculate purchase price if not provided
+        if (productDTO.getPurchasePrice() == null || productDTO.getPurchasePrice().compareTo(BigDecimal.ZERO) <= 0) {
+            product.setPurchasePrice(productDTO.getPrice().multiply(new BigDecimal("0.8")));
+        } else {
+            product.setPurchasePrice(productDTO.getPurchasePrice());
+        }
+        
+        // Set tax rate or default to 0
+        product.setTaxRate(productDTO.getTaxRate() != null ? productDTO.getTaxRate() : BigDecimal.ZERO);
+        
         return productRepository.save(product);
     }
 
@@ -64,6 +86,10 @@ public class ProductService {
         product.setUnit(productDTO.getUnit());
         product.setImageUrl(productDTO.getImageUrl());
         product.setMinStockLevel(productDTO.getMinStockLevel());
+        product.setSku(productDTO.getSku());
+        product.setBrand(productDTO.getBrand());
+        product.setPurchasePrice(productDTO.getPurchasePrice());
+        product.setTaxRate(productDTO.getTaxRate());
         
         return productRepository.save(product);
     }
@@ -90,5 +116,15 @@ public class ProductService {
 
     public long countAvailableProducts() {
         return productRepository.count();
+    }
+    
+    private String generateSKU(String productName, String categoryName) {
+        // Generate SKU: First 3 letters of category + First 3 letters of product + timestamp
+        String categoryPrefix = categoryName.length() >= 3 ? categoryName.substring(0, 3).toUpperCase() : categoryName.toUpperCase();
+        String productPrefix = productName.replaceAll("\\s+", "").length() >= 3 ? 
+            productName.replaceAll("\\s+", "").substring(0, 3).toUpperCase() : 
+            productName.replaceAll("\\s+", "").toUpperCase();
+        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8); // Last 5 digits
+        return categoryPrefix + "-" + productPrefix + "-" + timestamp;
     }
 }

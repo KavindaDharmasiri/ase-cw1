@@ -32,6 +32,9 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FinancialService financialService;
+
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
@@ -57,6 +60,15 @@ public class OrderService {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
+        // Validate credit limit for credit customers
+        BigDecimal orderTotal = calculateOrderTotal(items);
+        if (customer.getPaymentType() == User.PaymentType.CREDIT) {
+            BigDecimal availableCredit = customer.getCreditLimit().subtract(customer.getOutstandingBalance());
+            if (orderTotal.compareTo(availableCredit) > 0) {
+                throw new RuntimeException("Order amount exceeds available credit limit");
+            }
+        }
+
         Order order = new Order();
         order.setOrderCode(generateOrderCode());
         order.setCustomer(customer);
@@ -66,16 +78,13 @@ public class OrderService {
         order.setStoreName(storeName != null ? storeName : customer.getFullName());
         order.setStatus(Order.OrderStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
-        // Use frontend calculated delivery days or default to 5
         int deliveryDays = estimatedDeliveryDays != null ? estimatedDeliveryDays : 5;
         order.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(deliveryDays));
-        // Set temporary totalAmount to avoid null constraint
-        order.setTotalAmount(BigDecimal.ZERO);
+        order.setTotalAmount(orderTotal);
 
-        // Save order first to get ID
         order = orderRepository.save(order);
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // Create order items
         for (CreateOrderItemDTO itemDTO : items) {
             Product product = productRepository.findById(itemDTO.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemDTO.getProductId()));
@@ -88,11 +97,18 @@ public class OrderService {
             orderItem.setTotalPrice(product.getPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
             
             orderItemRepository.save(orderItem);
-            totalAmount = totalAmount.add(orderItem.getTotalPrice());
         }
 
-        order.setTotalAmount(totalAmount);
-        return orderRepository.save(order);
+        // Update customer outstanding balance for credit customers
+        if (customer.getPaymentType() == User.PaymentType.CREDIT) {
+            customer.setOutstandingBalance(customer.getOutstandingBalance().add(orderTotal));
+            userRepository.save(customer);
+        }
+
+        // Record financial transaction
+        financialService.recordSaleTransaction(order);
+
+        return order;
     }
 
     public Order updateOrderStatus(Long orderId, Order.OrderStatus status) {
@@ -167,6 +183,16 @@ public class OrderService {
         String year = String.valueOf(LocalDateTime.now().getYear());
         long orderCount = orderRepository.count() + 1;
         return String.format("ORD-%s-%04d", year, orderCount);
+    }
+
+    private BigDecimal calculateOrderTotal(List<CreateOrderItemDTO> items) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (CreateOrderItemDTO item : items) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + item.getProductId()));
+            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        }
+        return total;
     }
 
     // DTO class for order creation

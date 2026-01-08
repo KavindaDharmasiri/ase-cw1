@@ -4,15 +4,18 @@ import lk.ase.kavinda.islandlink.dto.RegisterRequest;
 import lk.ase.kavinda.islandlink.entity.PasswordResetToken;
 import lk.ase.kavinda.islandlink.entity.Role;
 import lk.ase.kavinda.islandlink.entity.User;
+import lk.ase.kavinda.islandlink.entity.RDC;
 import lk.ase.kavinda.islandlink.repository.PasswordResetTokenRepository;
 import lk.ase.kavinda.islandlink.repository.RoleRepository;
 import lk.ase.kavinda.islandlink.repository.UserRepository;
+import lk.ase.kavinda.islandlink.repository.RDCRepository;
 import lk.ase.kavinda.islandlink.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -22,6 +25,9 @@ public class UserService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private RDCRepository rdcRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -41,7 +47,26 @@ public class UserService {
             throw new RuntimeException("Email is already in use!");
         }
 
-        Role role = roleRepository.findByName(registerRequest.getRole())
+        Role role;
+        Role.RoleName roleName;
+        switch (registerRequest.getRole()) {
+            case "RETAILER":
+                roleName = Role.RoleName.RETAILER;
+                break;
+            case "RDC_STAFF":
+                roleName = Role.RoleName.RDC_STAFF;
+                break;
+            case "LOGISTICS":
+                roleName = Role.RoleName.LOGISTICS;
+                break;
+            case "HEAD_OFFICE_MANAGER":
+                roleName = Role.RoleName.HEAD_OFFICE_MANAGER;
+                break;
+            default:
+                throw new RuntimeException("Invalid role: " + registerRequest.getRole());
+        }
+        
+        role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         User user = new User(
@@ -51,6 +76,44 @@ public class UserService {
                 registerRequest.getFullName(),
                 role
         );
+        
+        // Set customer-specific fields if role is RETAILER
+        if ("RETAILER".equals(registerRequest.getRole())) {
+            user.setBusinessName(registerRequest.getBusinessName());
+            user.setDistrict(registerRequest.getDistrict());
+            user.setDeliveryAddress(registerRequest.getDeliveryAddress());
+            user.setContactPerson(registerRequest.getContactPerson());
+            user.setPhone(registerRequest.getPhone());
+            user.setGpsCoordinates(registerRequest.getGpsCoordinates());
+            
+            if (registerRequest.getBusinessType() != null) {
+                user.setBusinessType(User.BusinessType.valueOf(registerRequest.getBusinessType()));
+            }
+            if (registerRequest.getServicingRdcId() != null) {
+                RDC rdc = rdcRepository.findById(registerRequest.getServicingRdcId()).orElse(null);
+                user.setServicingRdc(rdc);
+            }
+            if (registerRequest.getPaymentType() != null) {
+                user.setPaymentType(User.PaymentType.valueOf(registerRequest.getPaymentType()));
+            }
+            if (registerRequest.getCreditLimit() != null) {
+                user.setCreditLimit(registerRequest.getCreditLimit());
+            }
+        }
+        
+        // Set RDC/Logistics specific fields
+        if ("RDC_STAFF".equals(registerRequest.getRole()) || "LOGISTICS".equals(registerRequest.getRole())) {
+            if (registerRequest.getServicingRdcId() != null) {
+                RDC rdc = rdcRepository.findById(registerRequest.getServicingRdcId()).orElse(null);
+                user.setServicingRdc(rdc);
+            }
+            user.setDepartment(registerRequest.getDepartment());
+        }
+        
+        // Set status
+        if (registerRequest.getStatus() != null) {
+            user.setStatus(User.UserStatus.valueOf(registerRequest.getStatus()));
+        }
 
         return userRepository.save(user);
     }

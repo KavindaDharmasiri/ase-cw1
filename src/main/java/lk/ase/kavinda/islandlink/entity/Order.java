@@ -19,6 +19,10 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rdc_id")
+    private RDC rdc;
+
     @Column(nullable = false)
     private String rdcLocation;
 
@@ -49,7 +53,7 @@ public class Order {
     private List<OrderItem> orderItems;
 
     public enum OrderStatus {
-        PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+        PENDING, CONFIRMED, PROCESSING, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
     }
 
     // Constructors
@@ -67,6 +71,9 @@ public class Order {
 
     public User getCustomer() { return customer; }
     public void setCustomer(User customer) { this.customer = customer; }
+
+    public RDC getRdc() { return rdc; }
+    public void setRdc(RDC rdc) { this.rdc = rdc; }
 
     public String getRdcLocation() { return rdcLocation; }
     public void setRdcLocation(String rdcLocation) { this.rdcLocation = rdcLocation; }
@@ -97,4 +104,6 @@ public class Order {
 
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
+
+    public List<OrderItem> getItems() { return orderItems; }
 }

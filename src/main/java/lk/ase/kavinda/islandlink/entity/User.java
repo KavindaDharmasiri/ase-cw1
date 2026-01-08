@@ -1,6 +1,7 @@
 package lk.ase.kavinda.islandlink.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "users")
@@ -24,6 +25,38 @@ public class User {
     private String address;
 
     private String phone;
+
+    // Customer-specific fields
+    private String businessName;
+    
+    private String district;
+    
+    @ManyToOne
+    @JoinColumn(name = "servicing_rdc_id")
+    private RDC servicingRdc;
+    
+    @Enumerated(EnumType.STRING)
+    private PaymentType paymentType = PaymentType.CASH;
+    
+    @Column(precision = 12, scale = 2)
+    private BigDecimal creditLimit = BigDecimal.ZERO;
+    
+    @Column(precision = 12, scale = 2)
+    private BigDecimal outstandingBalance = BigDecimal.ZERO;
+    
+    @Enumerated(EnumType.STRING)
+    private BusinessType businessType;
+    
+    private String deliveryAddress;
+    
+    private String contactPerson;
+    
+    private String gpsCoordinates;
+    
+    @Enumerated(EnumType.STRING)
+    private UserStatus status = UserStatus.ACTIVE;
+    
+    private String department; // For RDC/Logistics users
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
@@ -62,4 +95,52 @@ public class User {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public String getBusinessName() { return businessName; }
+    public void setBusinessName(String businessName) { this.businessName = businessName; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+
+    public RDC getServicingRdc() { return servicingRdc; }
+    public void setServicingRdc(RDC servicingRdc) { this.servicingRdc = servicingRdc; }
+
+    public PaymentType getPaymentType() { return paymentType; }
+    public void setPaymentType(PaymentType paymentType) { this.paymentType = paymentType; }
+
+    public BigDecimal getCreditLimit() { return creditLimit; }
+    public void setCreditLimit(BigDecimal creditLimit) { this.creditLimit = creditLimit; }
+
+    public BigDecimal getOutstandingBalance() { return outstandingBalance; }
+    public void setOutstandingBalance(BigDecimal outstandingBalance) { this.outstandingBalance = outstandingBalance; }
+    
+    public BusinessType getBusinessType() { return businessType; }
+    public void setBusinessType(BusinessType businessType) { this.businessType = businessType; }
+    
+    public String getDeliveryAddress() { return deliveryAddress; }
+    public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+    
+    public String getContactPerson() { return contactPerson; }
+    public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
+    
+    public String getGpsCoordinates() { return gpsCoordinates; }
+    public void setGpsCoordinates(String gpsCoordinates) { this.gpsCoordinates = gpsCoordinates; }
+    
+    public UserStatus getStatus() { return status; }
+    public void setStatus(UserStatus status) { this.status = status; }
+    
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
+    public enum PaymentType {
+        CASH, CREDIT
+    }
+    
+    public enum BusinessType {
+        RETAIL, SUPERMARKET, RESELLER
+    }
+    
+    public enum UserStatus {
+        ACTIVE, INACTIVE
+    }
 }
