@@ -1,13 +1,17 @@
 package lk.ase.kavinda.islandlink.service;
 
+import lk.ase.kavinda.islandlink.dto.OrderVerificationDTO;
+import lk.ase.kavinda.islandlink.dto.OrderVerificationRequest;
 import lk.ase.kavinda.islandlink.entity.Order;
 import lk.ase.kavinda.islandlink.entity.OrderItem;
 import lk.ase.kavinda.islandlink.entity.Product;
 import lk.ase.kavinda.islandlink.entity.User;
+import lk.ase.kavinda.islandlink.entity.Inventory;
 import lk.ase.kavinda.islandlink.repository.OrderRepository;
 import lk.ase.kavinda.islandlink.repository.OrderItemRepository;
 import lk.ase.kavinda.islandlink.repository.ProductRepository;
 import lk.ase.kavinda.islandlink.repository.UserRepository;
+import lk.ase.kavinda.islandlink.repository.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -41,6 +46,9 @@ public class OrderService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private InventoryRepository inventoryRepository;
+
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
@@ -51,6 +59,10 @@ public class OrderService {
 
     public List<Order> getOrdersByRdc(String rdcLocation) {
         return orderRepository.findByRdcLocation(rdcLocation);
+    }
+
+    public List<Order> getOrdersByRdcId(Long rdcId) {
+        return orderRepository.findByRdcId(rdcId);
     }
 
     public List<Order> getOrdersByStatus(Order.OrderStatus status) {
@@ -102,7 +114,9 @@ public class OrderService {
         order.setOrderCode(generateOrderCode());
         order.setCustomer(customer);
         order.setRdcLocation(assignedRdcLocation);
-        order.setDeliveryAddress(deliveryAddress);
+        order.setDeliveryAddress(deliveryAddress != null && !deliveryAddress.trim().isEmpty() && !"No address on file".equals(deliveryAddress) 
+                ? deliveryAddress 
+                : customer.getAddress() != null ? customer.getAddress() : "123 Main Street, Colombo 01, Sri Lanka");
         order.setCustomerPhone(customerPhone != null ? customerPhone : customer.getPhone());
         order.setStoreName(storeName != null ? storeName : customer.getFullName());
         order.setStatus(Order.OrderStatus.PENDING);
@@ -141,6 +155,10 @@ public class OrderService {
         financialService.recordSaleTransaction(order);
 
         return order;
+    }
+
+    public Order updateOrder(Order order) {
+        return orderRepository.save(order);
     }
 
     public Order updateOrderStatus(Long orderId, Order.OrderStatus status) {
@@ -274,6 +292,139 @@ public class OrderService {
         notificationService.notifyOrderRejected(order, rejectionReason);
         
         return order;
+    }
+
+    public List<OrderVerificationDTO> getPendingOrdersForVerification(Long rdcId) {
+        return orderRepository.findByStatusAndRdcId(Order.OrderStatus.PENDING,rdcId)
+                .stream()
+                .map(this::convertToVerificationDTO)
+                .collect(Collectors.toList());
+    }
+
+    public String processOrderVerification(OrderVerificationRequest request) {
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        switch (request.getDecision()) {
+            case "APPROVE":
+                return approveOrderFully(order);
+            case "PARTIAL_APPROVE":
+                return approveOrderPartially(order, request.getItemAdjustments());
+            case "REJECT":
+                return rejectOrderWithReason(order, request.getRejectionReason());
+            default:
+                throw new RuntimeException("Invalid decision: " + request.getDecision());
+        }
+    }
+
+    public OrderVerificationDTO getOrderVerificationDetails(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        return convertToVerificationDTO(order);
+    }
+
+    private OrderVerificationDTO convertToVerificationDTO(Order order) {
+        OrderVerificationDTO dto = new OrderVerificationDTO();
+        dto.setOrderId(order.getId());
+        dto.setOrderNumber(order.getOrderCode());
+        dto.setCustomerName(order.getCustomer().getFullName());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setPaymentType(order.getCustomer().getPaymentType().toString());
+        dto.setCreditLimit(order.getCustomer().getCreditLimit());
+        dto.setAvailableCredit(calculateAvailableCredit(order.getCustomer()));
+        
+        List<OrderVerificationDTO.OrderItemVerificationDTO> itemDTOs = order.getOrderItems().stream()
+                .map(this::convertToItemVerificationDTO)
+                .collect(Collectors.toList());
+        dto.setItems(itemDTOs);
+        
+        return dto;
+    }
+
+    private String approveOrderFully(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            allocateStock(item);
+        }
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+        return "Order approved and stock allocated";
+    }
+
+    private String approveOrderPartially(Order order, List<OrderVerificationRequest.ItemAdjustment> adjustments) {
+        for (OrderVerificationRequest.ItemAdjustment adj : adjustments) {
+            OrderItem item = order.getOrderItems().stream()
+                    .filter(i -> i.getId().equals(adj.getItemId()))
+                    .findFirst().orElse(null);
+            if (item != null) {
+                item.setQuantity(adj.getAdjustedQuantity());
+                item.setTotalPrice(item.getUnitPrice().multiply(BigDecimal.valueOf(adj.getAdjustedQuantity())));
+                allocateStock(item);
+            }
+        }
+        
+        BigDecimal newTotal = order.getOrderItems().stream()
+                .map(OrderItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        order.setTotalAmount(newTotal);
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+        
+        return "Order partially approved with quantity adjustments";
+    }
+
+    private String rejectOrderWithReason(Order order, String reason) {
+        order.setStatus(Order.OrderStatus.REJECTED);
+        order.setRejectionReason(reason);
+        orderRepository.save(order);
+        return "Order rejected: " + reason;
+    }
+
+    private void allocateStock(OrderItem item) {
+        // Get RDC ID from customer's servicing RDC
+        Long rdcId = item.getOrder().getCustomer().getServicingRdc() != null ? 
+                    item.getOrder().getCustomer().getServicingRdc().getId() : 1L;
+        
+        // Allocate stock using inventory service
+        boolean allocated = inventoryService.allocateStock(
+            item.getProduct().getId(), 
+            rdcId, 
+            item.getQuantity(),
+            item.getOrder().getId(),
+            1L // Default staff user ID
+        );
+        
+        if (!allocated) {
+            throw new RuntimeException("Failed to allocate stock for product: " + item.getProduct().getName());
+        }
+    }
+
+    private BigDecimal calculateAvailableCredit(User customer) {
+        return orderRepository.findByCustomerAndStatus(customer, Order.OrderStatus.CONFIRMED)
+                .stream()
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .subtract(customer.getCreditLimit());
+    }
+
+    private OrderVerificationDTO.OrderItemVerificationDTO convertToItemVerificationDTO(OrderItem item) {
+        OrderVerificationDTO.OrderItemVerificationDTO dto = new OrderVerificationDTO.OrderItemVerificationDTO();
+        dto.setItemId(item.getId());
+        dto.setProductName(item.getProduct().getName());
+        dto.setRequestedQuantity(item.getQuantity());
+        dto.setUnitPrice(item.getUnitPrice());
+        
+        // Get actual stock from inventory
+        Long rdcId = item.getOrder().getCustomer().getServicingRdc() != null ? 
+                    item.getOrder().getCustomer().getServicingRdc().getId() : 1L;
+        Integer actualStock = inventoryService.getInventoryByProductAndRdc(item.getProduct().getId(), rdcId)
+                .map(inventory -> inventory.getAvailableStock())
+                .orElse(0);
+        
+        dto.setAvailableStock(actualStock);
+        dto.setAvailabilityStatus(actualStock >= item.getQuantity() ? "AVAILABLE" : "UNAVAILABLE");
+        dto.setSuggestedQuantity(Math.min(actualStock, item.getQuantity()));
+        
+        return dto;
     }
 
     // DTO class for order creation

@@ -2,7 +2,6 @@ package lk.ase.kavinda.islandlink.controller;
 
 import lk.ase.kavinda.islandlink.dto.ProductDTO;
 import lk.ase.kavinda.islandlink.dto.ProductResponseDTO;
-import lk.ase.kavinda.islandlink.entity.Inventory;
 import lk.ase.kavinda.islandlink.entity.Product;
 import lk.ase.kavinda.islandlink.service.BulkUploadService;
 import lk.ase.kavinda.islandlink.service.ProductService;
@@ -53,16 +52,6 @@ public class ProductController {
         return productService.getAllProducts().stream()
                 .map(ProductResponseDTO::new)
                 .toList();
-    }
-
-    @GetMapping("/debug/inventory/{rdcId}")
-    public ResponseEntity<?> debugInventory(@PathVariable Long rdcId) {
-        List<Inventory> inventory = inventoryService.getInventoryByRdc(rdcId);
-        return ResponseEntity.ok(Map.of(
-            "rdcId", rdcId,
-            "inventoryCount", inventory.size(),
-            "inventory", inventory
-        ));
     }
 
     @GetMapping("/{id}")

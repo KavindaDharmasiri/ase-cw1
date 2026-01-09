@@ -11,9 +11,13 @@ import java.util.Optional;
 
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     Optional<Inventory> findByProductAndRdc(Product product, RDC rdc);
+    
     @Query("SELECT i FROM Inventory i WHERE i.rdc = :rdc")
     List<Inventory> findByRdc(@Param("rdc") RDC rdc);
     
     @Query("SELECT i FROM Inventory i WHERE i.availableStock > 0")
     List<Inventory> findAvailableStock();
+    
+    @Query("SELECT i FROM Inventory i WHERE i.product.id = :productId AND i.rdc.location = :rdcLocation")
+    Optional<Inventory> findByProductIdAndRdcLocation(@Param("productId") Long productId, @Param("rdcLocation") String rdcLocation);
 }

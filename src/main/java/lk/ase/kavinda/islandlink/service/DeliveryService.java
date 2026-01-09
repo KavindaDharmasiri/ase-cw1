@@ -32,14 +32,6 @@ public class DeliveryService {
         return deliveryRepository.findByStatus(status);
     }
 
-    public List<Delivery> getDeliveriesByRdc(String rdcLocation) {
-        return deliveryRepository.findByRdcLocation(rdcLocation);
-    }
-
-    public List<Delivery> getDeliveriesByCustomer(Long customerId) {
-        return deliveryRepository.findByCustomerId(customerId);
-    }
-
     public Optional<Delivery> getDeliveryById(Long id) {
         return deliveryRepository.findById(id);
     }
@@ -63,7 +55,7 @@ public class DeliveryService {
         delivery = deliveryRepository.save(delivery);
 
         // Update order status
-        orderService.updateOrderStatus(orderId, Order.OrderStatus.SHIPPED);
+        orderService.updateOrderStatus(orderId, Order.OrderStatus.OUT_FOR_DELIVERY);
 
         return delivery;
     }

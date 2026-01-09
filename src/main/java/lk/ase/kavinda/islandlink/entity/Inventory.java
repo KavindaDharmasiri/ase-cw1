@@ -51,6 +51,13 @@ public class Inventory {
     public Integer getAllocatedStock() { return allocatedStock; }
     public void setAllocatedStock(Integer allocatedStock) { this.allocatedStock = allocatedStock; }
 
+    // Convenience methods for service
+    public Integer getAvailableQuantity() { return availableStock; }
+    public void setAvailableQuantity(Integer quantity) { this.availableStock = quantity; }
+    
+    public Integer getAllocatedQuantity() { return allocatedStock; }
+    public void setAllocatedQuantity(Integer quantity) { this.allocatedStock = quantity; }
+
     public Integer getInTransitStock() { return inTransitStock; }
     public void setInTransitStock(Integer inTransitStock) { this.inTransitStock = inTransitStock; }
 

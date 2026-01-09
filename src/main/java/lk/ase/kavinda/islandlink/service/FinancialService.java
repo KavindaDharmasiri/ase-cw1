@@ -148,6 +148,35 @@ public class FinancialService {
         ledgerRepository.save(inventoryEntry);
     }
 
+    @Transactional
+    public void recordCashDeposit(DriverSettlement settlement) {
+        BigDecimal totalAmount = settlement.getTotalAmount();
+        
+        // Debit: Cash (Bank)
+        FinancialLedger bankEntry = new FinancialLedger();
+        bankEntry.setTransactionNumber(generateTransactionNumber());
+        bankEntry.setTransactionType(FinancialLedger.TransactionType.PAYMENT_RECEIVED);
+        bankEntry.setAccountType(FinancialLedger.AccountType.CASH);
+        bankEntry.setDebitAmount(totalAmount);
+        bankEntry.setDescription("Cash deposit from driver settlement: " + settlement.getSettlementNumber());
+        bankEntry.setReferenceType("SETTLEMENT");
+        bankEntry.setReferenceId(settlement.getId());
+        bankEntry.setRdc(settlement.getRdc());
+        ledgerRepository.save(bankEntry);
+        
+        // Credit: Cash in Hand (reducing cash in hand)
+        FinancialLedger cashHandEntry = new FinancialLedger();
+        cashHandEntry.setTransactionNumber(generateTransactionNumber());
+        cashHandEntry.setTransactionType(FinancialLedger.TransactionType.TRANSFER);
+        cashHandEntry.setAccountType(FinancialLedger.AccountType.CASH);
+        cashHandEntry.setCreditAmount(totalAmount);
+        cashHandEntry.setDescription("Cash in hand deposited: " + settlement.getSettlementNumber());
+        cashHandEntry.setReferenceType("SETTLEMENT");
+        cashHandEntry.setReferenceId(settlement.getId());
+        cashHandEntry.setRdc(settlement.getRdc());
+        ledgerRepository.save(cashHandEntry);
+    }
+
     private String generateTransactionNumber() {
         return "TXN" + System.currentTimeMillis();
     }

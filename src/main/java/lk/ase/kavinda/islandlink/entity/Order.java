@@ -23,10 +23,14 @@ public class Order {
     @JoinColumn(name = "rdc_id")
     private RDC rdc;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_route_id")
+    private DeliveryRoute deliveryRoute;
+
     @Column(nullable = false)
     private String rdcLocation;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -53,7 +57,7 @@ public class Order {
     private List<OrderItem> orderItems;
 
     public enum OrderStatus {
-        PENDING, CONFIRMED, PROCESSING, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+        PENDING, PENDING_VERIFICATION, CONFIRMED, PICK_LIST_CREATED, ASSIGNED_TO_ROUTE, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, REJECTED
     }
 
     // Constructors
@@ -106,4 +110,12 @@ public class Order {
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
 
     public List<OrderItem> getItems() { return orderItems; }
+
+    public DeliveryRoute getDeliveryRoute() { return deliveryRoute; }
+    public void setDeliveryRoute(DeliveryRoute deliveryRoute) { this.deliveryRoute = deliveryRoute; }
+
+    private String rejectionReason;
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

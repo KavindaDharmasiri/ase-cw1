@@ -35,6 +35,17 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
+    public Payment recordPayment(Long orderId, BigDecimal amount, String paymentMethod) {
+        Payment payment = new Payment();
+        payment.setOrderId(orderId);
+        payment.setAmount(amount);
+        payment.setMethod("CASH".equals(paymentMethod) ? Payment.PaymentMethod.CASH_ON_DELIVERY : Payment.PaymentMethod.ONLINE);
+        payment.setStatus(Payment.PaymentStatus.COMPLETED);
+        payment.setTransactionId("TXN_" + UUID.randomUUID().toString().substring(0, 8));
+        
+        return paymentRepository.save(payment);
+    }
+
     public List<Payment> getPaymentHistory() {
         return paymentRepository.findAll();
     }

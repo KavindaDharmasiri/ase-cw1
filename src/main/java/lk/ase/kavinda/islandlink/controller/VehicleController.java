@@ -1,10 +1,13 @@
 package lk.ase.kavinda.islandlink.controller;
 
+import lk.ase.kavinda.islandlink.dto.VehicleDTO;
 import lk.ase.kavinda.islandlink.entity.Vehicle;
-import lk.ase.kavinda.islandlink.repository.VehicleRepository;
+import lk.ase.kavinda.islandlink.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -13,51 +16,31 @@ import java.util.List;
 public class VehicleController {
 
     @Autowired
-    private VehicleRepository vehicleRepository;
+    private VehicleService vehicleService;
 
     @GetMapping
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
     public List<Vehicle> getAllVehicles() {
-        return vehicleRepository.findAll();
-    }
-
-    @GetMapping("/active")
-    public List<Vehicle> getActiveVehicles() {
-        return vehicleRepository.findByActiveTrue();
-    }
-
-    @GetMapping("/rdc/{rdcId}")
-    public List<Vehicle> getVehiclesByRdc(@PathVariable Long rdcId) {
-        return vehicleRepository.findByRdcAndActiveTrue(
-            vehicleRepository.findById(1L).get().getRdc()
-        );
+        return vehicleService.getAllVehicles();
     }
 
     @PostMapping
-    public Vehicle createVehicle(@RequestBody Vehicle vehicle) {
-        return vehicleRepository.save(vehicle);
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<Vehicle> createVehicle(@RequestBody VehicleDTO vehicleDTO) {
+        Vehicle createdVehicle = vehicleService.createVehicle(vehicleDTO);
+        return ResponseEntity.ok(createdVehicle);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Vehicle> updateVehicle(@PathVariable Long id, @RequestBody Vehicle vehicle) {
-        return vehicleRepository.findById(id)
-                .map(existing -> {
-                    existing.setVehicleNumber(vehicle.getVehicleNumber());
-                    existing.setVehicleType(vehicle.getVehicleType());
-                    existing.setCapacity(vehicle.getCapacity());
-                    existing.setActive(vehicle.getActive());
-                    return ResponseEntity.ok(vehicleRepository.save(existing));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/available")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public List<Vehicle> getAvailableVehicles() {
+        return vehicleService.getAvailableVehicles();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteVehicle(@PathVariable Long id) {
-        return vehicleRepository.findById(id)
-                .map(vehicle -> {
-                    vehicle.setActive(false);
-                    vehicleRepository.save(vehicle);
-                    return ResponseEntity.ok("Vehicle deactivated successfully");
-                })
-                .orElse(ResponseEntity.notFound().build());
+    @PostMapping("/create-sample")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<String> createSampleVehicles() {
+        vehicleService.createSampleVehicles();
+        return ResponseEntity.ok("Sample vehicles created");
     }
 }

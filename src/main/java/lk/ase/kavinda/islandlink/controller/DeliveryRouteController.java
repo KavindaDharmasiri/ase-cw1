@@ -1,6 +1,7 @@
 package lk.ase.kavinda.islandlink.controller;
 
 import lk.ase.kavinda.islandlink.entity.DeliveryRoute;
+import lk.ase.kavinda.islandlink.entity.Order;
 import lk.ase.kavinda.islandlink.service.DeliveryRouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +9,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/delivery-routes")
@@ -117,6 +121,40 @@ public class DeliveryRouteController {
         }
     }
 
+    @PostMapping("/{routeId}/assign-orders")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<?> assignOrdersToRoute(@PathVariable Long routeId, @RequestBody AssignOrdersRequest request) {
+        try {
+            deliveryRouteService.assignOrdersToRoute(routeId, request.getOrderIds());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Orders assigned to route"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{routeId}/orders")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<List<Map<String, Object>>> getRouteOrders(@PathVariable Long routeId) {
+        try {
+            List<Order> orders = deliveryRouteService.getRouteOrders(routeId);
+            List<Map<String, Object>> orderDTOs = orders.stream().map(order -> {
+                Map<String, Object> dto = new HashMap<>();
+                dto.put("id", order.getId());
+                dto.put("orderCode", order.getOrderCode());
+                dto.put("status", order.getStatus().toString());
+                dto.put("totalAmount", order.getTotalAmount());
+                dto.put("deliveryAddress", order.getDeliveryAddress());
+                dto.put("customerPhone", order.getCustomerPhone());
+                dto.put("storeName", order.getStoreName());
+                dto.put("orderDate", order.getOrderDate());
+                return dto;
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(orderDTOs);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('LOGISTICS') or hasRole('HEAD_OFFICE_MANAGER')")
     public ResponseEntity<Void> deleteRoute(@PathVariable Long id) {
@@ -168,5 +206,12 @@ public class DeliveryRouteController {
         public void setDriverName(String driverName) { this.driverName = driverName; }
         public String getVehicleNumber() { return vehicleNumber; }
         public void setVehicleNumber(String vehicleNumber) { this.vehicleNumber = vehicleNumber; }
+    }
+
+    public static class AssignOrdersRequest {
+        private List<Long> orderIds;
+
+        public List<Long> getOrderIds() { return orderIds; }
+        public void setOrderIds(List<Long> orderIds) { this.orderIds = orderIds; }
     }
 }

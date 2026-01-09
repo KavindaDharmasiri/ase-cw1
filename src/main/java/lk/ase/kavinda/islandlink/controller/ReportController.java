@@ -5,6 +5,8 @@ import lk.ase.kavinda.islandlink.service.ProductService;
 import lk.ase.kavinda.islandlink.service.InventoryService;
 import lk.ase.kavinda.islandlink.service.DeliveryService;
 import lk.ase.kavinda.islandlink.service.ReportExportService;
+import lk.ase.kavinda.islandlink.service.FinancialService;
+import lk.ase.kavinda.islandlink.entity.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -37,16 +39,40 @@ public class ReportController {
 
     @Autowired
     private ReportExportService reportExportService;
+    
+    @Autowired
+    private FinancialService financialService;
 
     @GetMapping("/dashboard")
-    public Map<String, Object> getDashboardReport() {
+    public Map<String, Object> getDashboardReport(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String category) {
         Map<String, Object> report = new HashMap<>();
         
-        report.put("totalOrders", orderService.getAllOrders().size());
+        // Apply filters if provided
+        var orders = orderService.getAllOrders();
+        if (startDate != null && endDate != null) {
+            // Filter by date range
+            orders = orders.stream()
+                    .filter(order -> order.getOrderDate().isAfter(java.time.LocalDateTime.parse(startDate))
+                            && order.getOrderDate().isBefore(java.time.LocalDateTime.parse(endDate)))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        
+        report.put("totalOrders", orders.size());
         report.put("totalProducts", productService.getAllProducts().size());
         report.put("totalInventoryItems", inventoryService.getAllInventory().size());
         report.put("lowStockItems", inventoryService.getLowStockItems().size());
         report.put("totalDeliveries", deliveryService.getAllDeliveries().size());
+        
+        // Add financial metrics
+        double totalRevenue = orders.stream()
+                .filter(order -> order.getStatus() == Order.OrderStatus.DELIVERED)
+                .mapToDouble(order -> order.getTotalAmount().doubleValue())
+                .sum();
+        report.put("totalRevenue", totalRevenue);
         
         return report;
     }
@@ -111,6 +137,48 @@ public class ReportController {
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(csvData);
+    }
+
+    @GetMapping("/financial")
+    public Map<String, Object> getFinancialReport(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        Map<String, Object> report = new HashMap<>();
+        
+        java.time.LocalDateTime start = startDate != null ? 
+            java.time.LocalDateTime.parse(startDate) : java.time.LocalDateTime.now().minusDays(30);
+        java.time.LocalDateTime end = endDate != null ? 
+            java.time.LocalDateTime.parse(endDate) : java.time.LocalDateTime.now();
+        
+        var ledgerEntries = financialService.getLedgerEntries(start, end);
+        
+        double totalRevenue = ledgerEntries.stream()
+                .filter(entry -> entry.getAccountType() == lk.ase.kavinda.islandlink.entity.FinancialLedger.AccountType.SALES_REVENUE)
+                .mapToDouble(entry -> entry.getCreditAmount().doubleValue())
+                .sum();
+                
+        double totalCash = ledgerEntries.stream()
+                .filter(entry -> entry.getAccountType() == lk.ase.kavinda.islandlink.entity.FinancialLedger.AccountType.CASH)
+                .mapToDouble(entry -> entry.getDebitAmount().subtract(entry.getCreditAmount()).doubleValue())
+                .sum();
+        
+        report.put("totalRevenue", totalRevenue);
+        report.put("totalCash", totalCash);
+        report.put("ledgerEntries", ledgerEntries.size());
+        
+        return report;
+    }
+
+    @GetMapping("/settlements")
+    public Map<String, Object> getSettlementReport() {
+        Map<String, Object> report = new HashMap<>();
+        
+        // This would typically fetch from DriverSettlementRepository
+        report.put("totalSettlements", 0);
+        report.put("pendingSettlements", 0);
+        report.put("completedSettlements", 0);
+        
+        return report;
     }
 
     @GetMapping("/inventory/export")

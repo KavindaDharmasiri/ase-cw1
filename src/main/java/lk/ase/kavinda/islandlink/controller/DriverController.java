@@ -1,10 +1,13 @@
 package lk.ase.kavinda.islandlink.controller;
 
+import lk.ase.kavinda.islandlink.dto.DriverDTO;
 import lk.ase.kavinda.islandlink.entity.Driver;
-import lk.ase.kavinda.islandlink.repository.DriverRepository;
+import lk.ase.kavinda.islandlink.service.DriverService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -13,44 +16,31 @@ import java.util.List;
 public class DriverController {
 
     @Autowired
-    private DriverRepository driverRepository;
+    private DriverService driverService;
 
     @GetMapping
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
     public List<Driver> getAllDrivers() {
-        return driverRepository.findAll();
-    }
-
-    @GetMapping("/active")
-    public List<Driver> getActiveDrivers() {
-        return driverRepository.findByActiveTrue();
+        return driverService.getAllDrivers();
     }
 
     @PostMapping
-    public Driver createDriver(@RequestBody Driver driver) {
-        return driverRepository.save(driver);
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<Driver> createDriver(@RequestBody DriverDTO driverDTO) {
+        Driver createdDriver = driverService.createDriver(driverDTO);
+        return ResponseEntity.ok(createdDriver);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Driver> updateDriver(@PathVariable Long id, @RequestBody Driver driver) {
-        return driverRepository.findById(id)
-                .map(existing -> {
-                    existing.setName(driver.getName());
-                    existing.setLicenseNumber(driver.getLicenseNumber());
-                    existing.setPhone(driver.getPhone());
-                    existing.setActive(driver.getActive());
-                    return ResponseEntity.ok(driverRepository.save(existing));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/available")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public List<Driver> getAvailableDrivers() {
+        return driverService.getAvailableDrivers();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteDriver(@PathVariable Long id) {
-        return driverRepository.findById(id)
-                .map(driver -> {
-                    driver.setActive(false);
-                    driverRepository.save(driver);
-                    return ResponseEntity.ok("Driver deactivated successfully");
-                })
-                .orElse(ResponseEntity.notFound().build());
+    @PostMapping("/create-sample")
+    @PreAuthorize("hasRole('LOGISTICS') or hasRole('RDC_STAFF') or hasRole('HEAD_OFFICE_MANAGER')")
+    public ResponseEntity<String> createSampleDrivers() {
+        driverService.createSampleDrivers();
+        return ResponseEntity.ok("Sample drivers created");
     }
 }

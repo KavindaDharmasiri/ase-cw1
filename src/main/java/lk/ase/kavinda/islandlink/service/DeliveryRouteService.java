@@ -2,8 +2,10 @@ package lk.ase.kavinda.islandlink.service;
 
 import lk.ase.kavinda.islandlink.entity.Delivery;
 import lk.ase.kavinda.islandlink.entity.DeliveryRoute;
+import lk.ase.kavinda.islandlink.entity.Order;
 import lk.ase.kavinda.islandlink.repository.DeliveryRepository;
 import lk.ase.kavinda.islandlink.repository.DeliveryRouteRepository;
+import lk.ase.kavinda.islandlink.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,9 @@ public class DeliveryRouteService {
 
     @Autowired
     private DeliveryRepository deliveryRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     public List<DeliveryRoute> getAllRoutes() {
         return deliveryRouteRepository.findAll();
@@ -113,10 +118,14 @@ public class DeliveryRouteService {
 
         route.setStatus(DeliveryRoute.RouteStatus.IN_PROGRESS);
 
-        // Update all associated deliveries to IN_TRANSIT
-        List<Delivery> deliveries = deliveryRepository.findByDeliveryRouteId(routeId);
-        deliveries.forEach(delivery -> delivery.setStatus(Delivery.DeliveryStatus.IN_TRANSIT));
-        deliveryRepository.saveAll(deliveries);
+        // Update all orders assigned to this route to OUT_FOR_DELIVERY
+        List<Order> orders = orderRepository.findByDeliveryRouteId(routeId);
+        orders.forEach(order -> {
+            if (order.getStatus() == Order.OrderStatus.ASSIGNED_TO_ROUTE) {
+                order.setStatus(Order.OrderStatus.OUT_FOR_DELIVERY);
+            }
+        });
+        orderRepository.saveAll(orders);
 
         return deliveryRouteRepository.save(route);
     }
@@ -139,5 +148,27 @@ public class DeliveryRouteService {
 
     public long countRoutesByStatus(DeliveryRoute.RouteStatus status) {
         return deliveryRouteRepository.countByStatus(status);
+    }
+
+    @Transactional
+    public void assignOrdersToRoute(Long routeId, List<Long> orderIds) {
+        DeliveryRoute route = deliveryRouteRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found"));
+
+        List<Order> orders = orderRepository.findAllById(orderIds);
+        
+        for (Order order : orders) {
+            if (order.getStatus() != Order.OrderStatus.PICK_LIST_CREATED) {
+                throw new RuntimeException("Only orders with pick lists can be assigned to routes");
+            }
+            order.setDeliveryRoute(route);
+            order.setStatus(Order.OrderStatus.ASSIGNED_TO_ROUTE);
+        }
+        
+        orderRepository.saveAll(orders);
+    }
+
+    public List<Order> getRouteOrders(Long routeId) {
+        return orderRepository.findByDeliveryRouteId(routeId);
     }
 }

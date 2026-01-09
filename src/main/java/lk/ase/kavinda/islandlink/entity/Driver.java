@@ -20,7 +20,7 @@ public class Driver {
     private String phone;
 
     @ManyToOne
-    @JoinColumn(name = "rdc_id", nullable = false)
+    @JoinColumn(name = "rdc_id")
     private RDC rdc;
 
     @Column(nullable = false)

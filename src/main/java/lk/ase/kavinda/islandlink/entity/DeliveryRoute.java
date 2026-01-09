@@ -30,6 +30,9 @@ public class DeliveryRoute {
     @Enumerated(EnumType.STRING)
     private RouteStatus status;
 
+    @Column(nullable = false)
+    private boolean pickListGenerated = false;
+
     @OneToMany(mappedBy = "deliveryRoute", cascade = CascadeType.ALL)
     private List<Delivery> deliveries;
 
@@ -71,4 +74,7 @@ public class DeliveryRoute {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public boolean isPickListGenerated() { return pickListGenerated; }
+    public void setPickListGenerated(boolean pickListGenerated) { this.pickListGenerated = pickListGenerated; }
 }
